@@ -18,8 +18,7 @@ local HIGHLIGHT_GROUPS = {
 -- Namespace for extmarks
 M.namespace = vim.api.nvim_create_namespace('goplexity')
 
--- Track visibility state
-M.visible = true
+M.visible = false
 
 -- Clear all extmarks in buffer
 function M.clear(bufnr)
@@ -50,7 +49,7 @@ local function display_loop(bufnr, loop_info, config)
   create_extmark(bufnr, M.namespace, loop_info.line - 1, text, config.virtual_text_hl_group)
 end
 
--- Display function call complexity (show both time and space)
+-- Display function call time complexity
 local function display_function_call(bufnr, call_info, config)
   local time_complexity = call_info.complexity or call_info.base_complexity or 'O(1)'
   local text = string.format('%s T:%s', config.virtual_text_icon, time_complexity)
@@ -146,27 +145,22 @@ function M.display(bufnr, analysis_results)
   local config = require('goplexity.config').config
   bufnr = bufnr or vim.api.nvim_get_current_buf()
 
-  -- Clear existing marks
   M.clear(bufnr)
 
   if not M.visible then
     return
   end
 
-  -- Display overall complexity
   display_overall(bufnr, analysis_results.overall_time, analysis_results.space, config)
 
-  -- Display per-function complexity summaries
   for _, func_info in ipairs(analysis_results.functions or {}) do
     display_function_summary(bufnr, func_info, config)
   end
 
-  -- Display loop complexities
   for _, loop_info in ipairs(analysis_results.loops) do
     display_loop(bufnr, loop_info, config)
   end
 
-  -- Display function call complexities
   for _, call_info in ipairs(analysis_results.function_calls) do
     display_function_call(bufnr, call_info, config)
   end

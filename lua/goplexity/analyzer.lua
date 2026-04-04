@@ -2,7 +2,6 @@
 
 local M = {}
 
--- Constants
 local CONSTANTS = {
   DEFAULT_COMPLEXITY = 'O(1)',
   DEFAULT_RANK = 100,
@@ -290,12 +289,11 @@ local function analyze_go_for_loop(line, lines, current_line)
     if detect_binary_search(lines, current_line) then
       return 'O(log n)'
     end
-    -- Could be a while-like loop, analyze condition for patterns
-    -- For now, default to O(n)
+    -- While-style loop without recognizable pattern
     return 'O(n)'
   end
 
-  return 'O(n)' -- Default assumption
+  return 'O(n)'
 end
 
 -- Detect standard library function complexities (Go only)
@@ -651,7 +649,7 @@ local function analyze_function_call(line)
   return nil
 end
 
--- Detect algorithms by analyzing function content (structural patterns, not name-based)
+-- Detect algorithms by analyzing function content (structural and name-based patterns)
 local function detect_algorithm_by_content(lines, start_line, func_name)
   local func_content = {}
   local brace_count = 0
@@ -734,12 +732,6 @@ local function detect_algorithm_by_content(lines, start_line, func_name)
     return 'O(E log E)', 'O(V)'
   end
 
-  -- Prim: visited set + min-weight edge selection
-  local has_min_weight = content:match('min') and content:match('weight') or content:match('cost')
-  if has_adjacency and has_visited and has_min_weight and not has_pq then
-    return 'O(V²)', 'O(V)'
-  end
-
   -- Binary search: left/right/mid pattern
   local has_left_right = content:match('left') and content:match('right')
   local has_mid = content:match('mid')
@@ -779,12 +771,6 @@ local function detect_algorithm_by_content(lines, start_line, func_name)
   -- Union-Find/DSU: parent array + find with path compression
   if has_union_find then
     return 'O(α(n))', 'O(n)'
-  end
-
-  -- Kruskal: edge sorting + union-find
-  local has_edge_sort = (content:match('sort') or content:match('Sort')) and content:match('edges')
-  if has_edge_sort and has_union_find then
-    return 'O(E log E)', 'O(V)'
   end
 
   -- Trie: children map/array + character traversal
@@ -914,10 +900,8 @@ function M.analyze(bufnr)
   local current_function = nil
   local function_stack = {}
 
-  -- Analyze space first
   results.space, results.space_items = analyze_space(lines)
 
-  -- Analyze time complexity
   for i, line in ipairs(lines) do
     local trimmed = line:match('^%s*(.-)%s*$')
 
@@ -959,7 +943,6 @@ function M.analyze(bufnr)
         -- Check for content-based algorithm patterns
         local algo_time, algo_space = detect_algorithm_by_content(lines, i, func_name)
 
-        -- Start tracking new function
         current_function = {
           name = func_name,
           line = i,
@@ -984,7 +967,7 @@ function M.analyze(bufnr)
       end
     end
 
-    -- Skip comments and empty lines
+    -- Skip line comments and empty lines
     if not trimmed:match('^//') and not trimmed:match('^%s*$') then
       -- Detect loops (Go-specific)
       local loop_type = nil
@@ -1028,11 +1011,8 @@ function M.analyze(bufnr)
           depth = brace_depth + open_braces,
         })
 
-        -- Update overall time complexity - compare and take dominant
-        -- Skip for divide-and-conquer or algorithm functions as they have their own complexity
         if effective ~= 'O(1)' and not (current_function and (current_function.is_divide_conquer or current_function.is_algorithm)) then
           results.overall_time = get_dominant_complexity(results.overall_time, effective)
-          -- Update current function complexity
           if current_function and not current_function.is_divide_conquer and not current_function.is_algorithm then
             current_function.time_complexity = get_dominant_complexity(current_function.time_complexity, effective)
           end
@@ -1058,10 +1038,8 @@ function M.analyze(bufnr)
           nesting_level = #nesting_stack,
         })
 
-        -- Update overall time complexity with effective function call complexity
         if effective_call_complexity ~= 'O(1)' then
           results.overall_time = get_dominant_complexity(results.overall_time, effective_call_complexity)
-          -- Update current function complexity
           if current_function then
             current_function.time_complexity =
               get_dominant_complexity(current_function.time_complexity, effective_call_complexity)
@@ -1070,17 +1048,13 @@ function M.analyze(bufnr)
       end
     end
 
-    -- Update brace depth
     brace_depth = brace_depth + open_braces - close_braces
 
-    -- Pop loops when exiting their scope (brace-aware)
     while #nesting_stack > 0 and nesting_stack[#nesting_stack].depth > brace_depth do
       table.remove(nesting_stack)
     end
 
-    -- Check if we're exiting a function
     if current_function and brace_depth < current_function.start_depth then
-      -- Function ended, save it to results
       table.insert(results.functions, {
         name = current_function.name,
         line = current_function.line,

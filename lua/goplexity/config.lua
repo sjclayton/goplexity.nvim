@@ -44,7 +44,6 @@ M.config = vim.deepcopy(M.defaults)
 -- User-defined constraints for current session/file
 M.user_constraints = {}
 
--- Setup function to merge user config
 function M.setup(user_config)
   M.config = vim.tbl_deep_extend("force", M.config, user_config or {})
 end

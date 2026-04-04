@@ -11,7 +11,7 @@ local config = require('goplexity.config')
 -- Store last analysis results per buffer
 M.last_analysis = {}
 
--- Setup function for user configuration
+-- Setup
 function M.setup(user_config)
   config.setup(user_config)
 end
@@ -84,7 +84,6 @@ function M.toggle(bufnr)
   local visible = display.toggle(bufnr)
 
   if visible then
-    -- Re-run analysis and display
     run_analysis(bufnr)
   end
 
