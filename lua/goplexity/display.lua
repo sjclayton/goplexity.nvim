@@ -140,11 +140,11 @@ function M.display(bufnr, analysis_results)
   local config = require('goplexity.config').config
   bufnr = bufnr or vim.api.nvim_get_current_buf()
 
-  M.clear(bufnr)
-
   if not M.visible then
     return
   end
+
+  M.clear(bufnr)
 
   display_overall(bufnr, analysis_results.overall_time, analysis_results.space, config)
 
@@ -171,6 +171,12 @@ function M.toggle(bufnr)
   end
 
   return M.visible
+end
+
+-- Clear marks (exposed for external use)
+function M.hide(bufnr)
+  M.visible = false
+  M.clear(bufnr or vim.api.nvim_get_current_buf())
 end
 
 return M

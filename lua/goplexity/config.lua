@@ -5,11 +5,8 @@ local M = {}
 -- Complexity to operations mapping (matches analyzer hierarchy order)
 local COMPLEXITY_OPS = {
   ["O(1)"] = 1,
-  ["O(α(n))"] = 10,
   ["O(log n)"] = 100,
-  ["O(log² n)"] = 1000,
   ["O(√n)"] = 10000,
-  ["O(L)"] = 100,
   ["O(n)"] = 1000000,
   ["O(n log n)"] = 20000000,
   ["O(n log log n)"] = 5000000,

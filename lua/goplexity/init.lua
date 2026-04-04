@@ -2,8 +2,6 @@
 
 local M = {}
 
-M.version = '2.0.0'
-
 local analyzer = require('goplexity.analyzer')
 local display = require('goplexity.display')
 local config = require('goplexity.config')

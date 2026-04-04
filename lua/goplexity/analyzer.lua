@@ -194,6 +194,44 @@ local function detect_divide_conquer(lines, start_line, func_name)
   return nil, nil -- Not detected
 end
 
+-- Check if a line contains a logarithmic increment pattern
+local function is_log_increment(line)
+  return
+    line:match('[%w_]+%s*%*=%s*2') -- i *= 2
+    or line:match('[%w_]+%s*/=%s*2') -- i /= 2
+    or line:match('[%w_]+%s*<<=') -- i <<= 1
+    or line:match('[%w_]+%s*>>=') -- i >>= 1
+    or line:match('[%w_]+%s*=%s*[%w_]+%s*%*%s*2') -- i = i * 2
+    or line:match('[%w_]+%s*=%s*[%w_]+%s*/%s*2') -- i = i / 2
+end
+
+-- Check if a line contains a self-doubling increment
+local function is_self_double(line)
+  local var = line:match('([%w_]+)%s*%+=%s*[%w_]+')
+  return var and line:match(var .. '%s*%+=%s*' .. var)
+end
+
+-- Scan loop body for log increment patterns in the first few lines
+local function scan_body_for_log_increment(lines, start_line)
+  local brace_count = 0
+  local scanned = 0
+  for i = start_line, math.min(start_line + 10, #lines) do
+    local line = lines[i]
+    for c in line:gmatch('.') do
+      if c == '{' then brace_count = brace_count + 1 end
+      if c == '}' then brace_count = brace_count - 1 end
+    end
+    if is_log_increment(line) or is_self_double(line) then
+      return true
+    end
+    scanned = scanned + 1
+    if brace_count <= 0 and scanned > 0 then
+      break
+    end
+  end
+  return false
+end
+
 -- Analyze Go for loop complexity from its structure
 local function analyze_go_for_loop(line, lines, current_line)
   -- Go range-based for loop: for i, v := range slice
@@ -251,6 +289,10 @@ local function analyze_go_for_loop(line, lines, current_line)
     end
     -- Check for binary search pattern
     if detect_binary_search(lines, current_line) then
+      return 'O(log n)'
+    end
+    -- Check body for log increment patterns (e.g., for i := 1; i < n; { i *= 2 })
+    if scan_body_for_log_increment(lines, current_line + 1) then
       return 'O(log n)'
     end
     -- While-style loop without recognizable pattern
@@ -650,7 +692,6 @@ local function detect_algorithm_by_content(lines, start_line, func_name)
   local has_visited = content:match('visited') or content:match('seen') or content:match('visit%s*%[')
   local has_recursive_call = func_name and content:match(func_name .. '%s*%(')
   local has_queue_ops = content:match('queue') or content:match('push%s*%(') or content:match('pop%s*%(')
-  local has_stack_ops = content:match('stack') or content:match('Push%s*%(') or content:match('Pop%s*%(')
 
   -- Prim: visited set + min-weight/key selection (no queue or heap)
   -- Must check BEFORE generic graph traversal to avoid false positive
@@ -736,9 +777,8 @@ local function detect_algorithm_by_content(lines, start_line, func_name)
     return 'O(n log log n)', 'O(n)'
   end
 
-  -- GCD: modulo in loop/recursion
-  local has_gcd = content:match('%%%s*') and (content:match('gcd') or content:match('GCD') or (content:match('return') and content:match('%%%s*')))
-  if has_gcd and (content:match('b%s*==%s*0') or content:match('b%s*==%s*0')) then
+  -- GCD: modulo with b == 0 base case
+  if content:match('%%') and content:match('[%w_]%s*==%s*0') then
     return 'O(log n)', 'O(1)'
   end
 
@@ -755,7 +795,7 @@ local function detect_algorithm_by_content(lines, start_line, func_name)
   end
 
   -- Segment tree: array size 4*n + 2*node children
-  local has_seg_tree_size = content:match('4%s*%*%s*n') or content:match('4%s*%*')
+  local has_seg_tree_size = content:match('4%s*%*%s*n')
   local has_node_children = content:match('2%s*%*%s*node') or content:match('node%s*%*%s*2')
   if has_seg_tree_size or has_node_children then
     return 'O(log n)', 'O(n)'
@@ -792,8 +832,8 @@ local function analyze_space(lines)
       goto continue
     end
 
-    -- Skip slice/map literals (not allocations): []int{1, 2, 3}
-    if line:match('%[%s*%]%s*{') then
+    -- Skip slice/map literals with small inline data: []int{1, 2, 3}
+    if line:match('%[%s*%]%s*{') and not line:match('make%s*%[%s*') then
       goto continue
     end
 
@@ -829,6 +869,11 @@ local function analyze_space(lines)
       elseif line:match('make%s*%(map') then
         table.insert(space_items, { line = i, complexity = 'O(n)' })
       end
+    end
+
+    -- Detect new() allocations: new(int), new(Type)
+    if line:match('new%s*%(') then
+      table.insert(space_items, { line = i, complexity = 'O(1)' })
     end
 
     -- 2D slices (only make() calls, not literals)
