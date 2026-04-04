@@ -171,6 +171,6 @@ Each test fixture in `tests/*/main.go` is a real Go file with expected complexit
 declared in comments. The test runner analyzes each file and verifies the output
 matches expectations.
 
-## License
+## Contributing
 
-MIT
+Anyone who wishes to contribute is welcome to open an issue or submit a pull request.
