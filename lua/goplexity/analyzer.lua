@@ -10,14 +10,11 @@ local CONSTANTS = {
 
 -- Pattern matchers for control structures
 local CONTROL_PATTERNS = {
-  IF = '^if%s*%(',
-  WHILE = '^while%s*%(', -- Go doesn't have while, but we keep for compatibility
-  FOR = '^for%s*%(', -- C-style: for (init; cond; inc) - rare in Go but possible
-  FOR_TRADITIONAL = '^for%s+[%w_]', -- Go traditional: for i := 0; ... or for i = 0; ...
-  RANGE_FOR = '^for%s+[%w_].*:?=%s*[^=].*range', -- for i, v := range slice
-  FOR_COND = '^for%s+[^;{]', -- Go while-style: for condition { or for condition
-  DO = '^do%s*',
-  SWITCH = '^switch%s*%(',
+   IF = '^if%s*%(',
+   FOR_TRADITIONAL = '^for%s+[%w_]', -- Go traditional: for i := 0; ... or for i = 0; ...
+   RANGE_FOR = '^for%s+[%w_].*:?=%s*[^=].*range', -- for i, v := range slice
+   FOR_COND = '^for%s+[^;{]', -- Go while-style: for condition { or for condition
+   SWITCH = '^switch%s*%(',
 }
 
 -- Complexity class for easier manipulation
@@ -157,19 +154,19 @@ end
 
 -- Analyze for loop complexity from its structure
 local function analyze_for_loop(line)
-  -- Range-based for loop: for(auto x : container)
-  if line:match('for%s*%(.-%s*:%s*.-%)') then
-    return 'O(n)'
-  end
-
-  -- Traditional for loop: for (init; condition; increment)
-  local _, _, increment = line:match('for%s*%((.-)%;(.-)%;(.-)%)')
-
-  if increment then
-    return analyze_loop_increment(increment)
-  end
-
-  return 'O(n)' -- Default assumption
+   -- Range-based for loop: for i, v := range slice
+   if line:match('for%s*%(.-%s*:%s*.-%)') then
+     return 'O(n)'
+   end
+ 
+   -- Traditional for loop: for (init; condition; increment)
+   local _, _, increment = line:match('for%s*%((.-)%;(.-)%;(.-)%)')
+ 
+   if increment then
+     return analyze_loop_increment(increment)
+   end
+ 
+   return 'O(n)' -- Default assumption
 end
 
 -- Detect binary search pattern by analyzing function content
