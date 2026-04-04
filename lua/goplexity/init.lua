@@ -91,6 +91,24 @@ function M.toggle(bufnr)
   return visible
 end
 
+-- Auto-refresh on save when hints are visible
+function M.setup_autocmds()
+  local group = vim.api.nvim_create_augroup('GoplexityAutoRefresh', { clear = true })
+  vim.api.nvim_create_autocmd('BufWritePost', {
+    group = group,
+    pattern = '*.go',
+    callback = function()
+      if display.visible then
+        local bufnr = vim.api.nvim_get_current_buf()
+        if M.last_analysis[bufnr] then
+          run_analysis(bufnr)
+        end
+      end
+    end,
+    desc = 'Re-run goplexity analysis on save when hints are visible',
+  })
+end
+
 -- Main command handler
 function M.command(args)
   if #args == 0 then

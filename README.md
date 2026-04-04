@@ -18,12 +18,12 @@ Complexity analyzer for Golang
 - **Loops**: traditional `for i:=0; i<n; i++`, range-based `for _, v := range`, condition-based `for condition`, infinite `for { }`, and constant-bound `for i := 0; i < 10; i++` → O(1)
 - **Logarithmic loops**: `i *= 2`, `i /= 2`, `i <<= 1`, `i >>= 1`, `i += i` → O(log n)
 - **Square root loops**: `i * i <= n` condition → O(√n)
-- **Nested complexity multiplication**: correctly computes O(n²), O(n³), O(n log n), O(n² log n), O(log² n), O(n√n)
+- **Nested complexity multiplication**: correctly computes O(n²), O(n³), O(n log n), O(n² log n), O(n² log log n), O(log² n), O(n√n), O(n × 2^n), O(n × n!)
 - **Sorting**: `sort.Slice`, `sort.SliceStable`, `sort.Ints`, `sort.Strings`, `sort.Search` O(log n), `sort.SearchInts`, `sort.SearchFloat64s`, `sort.IsSorted`, `sort.Reverse`, heap operations
-- **Containers**: slices, maps, channels, `container/list` (PushBack, PushFront, Remove), `container/ring`
+- **Containers**: slices, maps, channels, `container/list` (New, PushBack, PushFront, Remove), `container/ring` (New), `container/heap` (Init O(n), Push/Pop/Fix/Remove O(log n))
 - **Strings**: `strings.Split`, `strings.Join`, `strings.Contains`, `strings.Index`, `strings.ToLower`, `strings.ToUpper`, `strings.Trim`, `strings.Replace`, `strings.Count`, `strings.HasPrefix`, `strings.HasSuffix`
-- **Bytes**: `bytes.Equal`, `bytes.Compare`, `bytes.Split`, `bytes.Join`, `bytes.Buffer`
-- **Math**: `math.Abs`, `math.Max`, `math.Min`, `math.Ceil`, `math.Floor`, `math.Round`, `math.Pow`, `math.Sqrt`, `math.Log`, `math.Exp`, `math.Sin`, `math.Cos`, `math.Tan`, `math.Atan2`, `math/bits` (OnesCount, LeadingZeros, TrailingZeros, RotateLeft), `math/big` (NewInt, NewFloat, Int.Add)
+- **Bytes**: `bytes.Equal`, `bytes.Compare`, `bytes.Split`, `bytes.Join`, `bytes.NewBuffer` O(1), `bytes.NewBufferString` O(n)
+- **Math**: `math.Abs`, `math.Max`, `math.Min`, `math.Ceil`, `math.Floor`, `math.Round`, `math.Pow`, `math.Sqrt`, `math.Log`, `math.Exp`, `math.Sin`, `math.Cos`, `math.Tan`, `math.Atan2`, `math/bits` (OnesCount, LeadingZeros, TrailingZeros, RotateLeft), `math/big` (NewInt, NewFloat, Int.Add, Int.Mul, Int.Div, Int.Sub)
 - **I/O**: `fmt.Print`, `fmt.Println`, `fmt.Sprint`, `fmt.Sprintf`, `fmt.Fprintf`, `fmt.Errorf`, `fmt.Scan`, `fmt.Fscan`, `fmt.Sscan`, `os.Open`, `os.Create`, `os.Stat`, `os.Lstat`, `os.ReadFile`, `os.WriteFile`, `os.Read`, `os.Write`, `os.ReadDir`, `bufio.NewReader`, `bufio.NewWriter`, `Scanner.Scan`, `io.ReadFull`, `io.Copy`
 - **Encoding**: `json.Marshal`, `json.Unmarshal`, `binary.Read`, `binary.Write`, `base64.NewDecoder`, `base64.NewEncoder`
 - **Hashing**: `sha256.Sum256`, `sha256.New`, `sha512.New`, `md5.Sum`, `md5.New`, `h.Write`, `h.Sum`, `hash.New`
@@ -35,7 +35,7 @@ Complexity analyzer for Golang
 - **Strconv**: `strconv.Atoi`, `strconv.Itoa`, `strconv.ParseInt`, `strconv.FormatInt`
 - **Regexp**: `regexp.Compile`, `regexp.Match`, `Regexp.Find`, `Regexp.FindAll`
 - **Compress**: `gzip.NewWriter`, `gzip.NewReader`
-- **Slices & Maps**: `slices.Sort` O(n log n), `slices.Contains` O(n), `slices.Equal` O(n), `slices.Clone` O(n), `slices.Delete` O(n), `slices.Insert` O(n), `maps.Keys` O(n), `maps.Values` O(n), `maps.Equal` O(n)
+- **Slices & Maps**: `slices.Sort`/`SortFunc`/`SortStableFunc` O(n log n), `slices.BinarySearch`/`BinarySearchFunc` O(log n), `slices.Contains`/`Equal`/`Clone`/`Delete`/`Insert`/`ContainsFunc`/`IndexFunc` O(n), `maps.Keys`/`Values`/`Equal`/`Clone`/`Copy` O(n)
 - **Builtins**: `append` O(1), `copy` O(n), `delete` O(1), `len`/`cap` O(1)
 - **Algorithms**:
   - Graph: DFS O(V+E), BFS O(V+E), Dijkstra O(E log V), Bellman-Ford O(V×E), Floyd-Warshall O(n³), Topological Sort O(V+E), Kruskal's MST O(E log E), Prim's MST O(V²)

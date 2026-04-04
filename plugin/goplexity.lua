@@ -15,3 +15,6 @@ end, {
 	end,
 	desc = "Goplexity complexity visualizer commands",
 })
+
+-- Set up auto-refresh on save
+require("goplexity").setup_autocmds()

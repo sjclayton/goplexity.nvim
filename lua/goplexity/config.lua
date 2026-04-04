@@ -2,19 +2,26 @@
 
 local M = {}
 
--- Complexity to operations mapping
+-- Complexity to operations mapping (matches analyzer hierarchy order)
 local COMPLEXITY_OPS = {
   ["O(1)"] = 1,
+  ["O(α(n))"] = 10,
   ["O(log n)"] = 100,
+  ["O(log² n)"] = 1000,
+  ["O(√n)"] = 10000,
+  ["O(L)"] = 100,
   ["O(n)"] = 1000000,
   ["O(n log n)"] = 20000000,
+  ["O(n log log n)"] = 5000000,
+  ["O(n√n)"] = 100000000,
   ["O(n²)"] = 1000000000,
+  ["O(n² log n)"] = 20000000000,
   ["O(n³)"] = 100000000000,
+  ["O(V+E)"] = 1000000,
+  ["O(V×E)"] = 1000000000,
+  ["O(E log V)"] = 20000000,
   ["O(2^n)"] = 1000000000000000,
   ["O(n!)"] = 10000000000000000,
-  ["O(V+E)"] = 1000000,
-  ["O(E log V)"] = 20000000,
-  ["O(V×E)"] = 1000000000,
 }
 
 -- Default configuration

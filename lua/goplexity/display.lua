@@ -26,11 +26,6 @@ function M.clear(bufnr)
   vim.api.nvim_buf_clear_namespace(bufnr, M.namespace, 0, -1)
 end
 
--- Format complexity string with icon
-local function format_complexity(complexity, config)
-  return string.format('%s %s', config.virtual_text_icon, complexity)
-end
-
 -- Create extmark with given text and styling
 local function create_extmark(bufnr, namespace, line, text, hl_group, priority)
   vim.api.nvim_buf_set_extmark(bufnr, namespace, line, 0, {

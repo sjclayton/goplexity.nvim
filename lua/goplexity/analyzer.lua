@@ -56,6 +56,12 @@ local COMPLEXITY_MULTIPLICATION = {
   ['log n|log n'] = 'O(log² n)',
   ['√n|n'] = 'O(n√n)',
   ['n|√n'] = 'O(n√n)',
+  ['n log log n|n'] = 'O(n² log log n)',
+  ['n|n log log n'] = 'O(n² log log n)',
+  ['2^n|n'] = 'O(n × 2^n)',
+  ['n|2^n'] = 'O(n × 2^n)',
+  ['n!|n'] = 'O(n × n!)',
+  ['n|n!'] = 'O(n × n!)',
 }
 
 -- Extract inner complexity from O(...) notation
@@ -90,51 +96,9 @@ local function multiply_complexity(complexity1, complexity2)
   return 'O(' .. inner1 .. ' × ' .. inner2 .. ')'
 end
 
--- Check if line contains logarithmic increment pattern
-local function is_logarithmic_pattern(line)
-  local log_patterns = {
-    '[%w_]+%s*%*=%s*2', -- i *= 2
-    '[%w_]+%s*/=%s*2', -- i /= 2
-    '[%w_]+%s*<<=%s*%d+', -- i <<= 1
-    '[%w_]+%s*>>=%s*%d+', -- i >>= 1
-    '[%w_]+%s*=%s*[%w_]+%s*%*%s*2', -- i = i * 2
-    '[%w_]+%s*=%s*[%w_]+%s*/%s*2', -- i = i / 2
-    '[%w_]+%s*&=%s*%(.-%-.-%)%', -- i &= (i-1)
-    '[%w_]+%s*=%s*[%w_]+%s*&%s*%(.-%-.-%)%', -- i = i & (i-1)
-  }
-
-  for _, pattern in ipairs(log_patterns) do
-    if line:match(pattern) then
-      return true
-    end
-  end
-  return false
-end
-
 -- Check if line contains square root pattern
 local function is_sqrt_pattern(line)
   return line:match('[%w_]+%s*%*%s*[%w_]+%s*[<>]=?%s*[%w_]+') or line:match('sqrt%s*%(')
-end
-
--- Detect complexity pattern from loop increment/condition
-local function analyze_loop_increment(increment_line)
-  if is_logarithmic_pattern(increment_line) then
-    return 'O(log n)'
-  end
-
-  if is_sqrt_pattern(increment_line) then
-    return 'O(√n)'
-  end
-
-  -- Check for i += i patterns (also log)
-  if increment_line:match('[%w_]+%s*%+=%s*[%w_]+') then
-    local var = increment_line:match('([%w_]+)%s*%+=')
-    if var and increment_line:match(var .. '%s*%+=%s*' .. var) then
-      return 'O(log n)'
-    end
-  end
-
-  return 'O(n)' -- Default: linear
 end
 
 -- Detect binary search pattern by analyzing function content
@@ -301,37 +265,37 @@ local function analyze_function_call(line)
   -- Go standard library functions
   -- Sorting and searching
   if line:match('sort%.Slice%s*%(') or line:match('sort%.SliceStable%s*%(') then
-    return { time = 'O(n log n)', is_call = true }
+    return { time = 'O(n log n)' }
   end
 
   if line:match('sort%.Search%s*%(') then
-    return { time = 'O(log n)', is_call = true }
+    return { time = 'O(log n)' }
   end
 
   if line:match('sort%.Ints%s*%(') or line:match('sort%.Strings%s*%(') then
-    return { time = 'O(n log n)', is_call = true }
+    return { time = 'O(n log n)' }
   end
 
   -- Container operations
   if line:match('append%s*%(') then
-    return { time = 'O(1)', is_call = true }
+    return { time = 'O(1)' }
   end
 
   if line:match('copy%s*%(') then
-    return { time = 'O(n)', is_call = true }
+    return { time = 'O(n)' }
   end
 
   if line:match('delete%s*%(') then
-    return { time = 'O(1)', is_call = true }
+    return { time = 'O(1)' }
   end
 
   if line:match('len%s*%(') or line:match('cap%s*%(') then
-    return { time = 'O(1)', is_call = true }
+    return { time = 'O(1)' }
   end
 
   -- String operations
   if line:match('strings%.Split%s*%(') or line:match('strings%.Join%s*%(') then
-    return { time = 'O(n)', is_call = true }
+    return { time = 'O(n)' }
   end
 
   if
@@ -340,7 +304,7 @@ local function analyze_function_call(line)
     or line:match('strings%.HasSuffix%s*%(')
     or line:match('strings%.Index%s*%(')
   then
-    return { time = 'O(n)', is_call = true }
+    return { time = 'O(n)' }
   end
 
   if
@@ -349,104 +313,104 @@ local function analyze_function_call(line)
     or line:match('strings%.Trim%s*%(')
     or line:match('strings%.Replace%s*%(')
   then
-    return { time = 'O(n)', is_call = true }
+    return { time = 'O(n)' }
   end
 
   if line:match('strings%.Count%s*%(') then
-    return { time = 'O(n)', is_call = true }
+    return { time = 'O(n)' }
   end
 
   -- Bytes operations
   if line:match('bytes%.Equal%s*%(') or line:match('bytes%.Compare%s*%(') then
-    return { time = 'O(n)', is_call = true }
+    return { time = 'O(n)' }
   end
 
   if line:match('bytes%.Split%s*%(') or line:match('bytes%.Join%s*%(') then
-    return { time = 'O(n)', is_call = true }
+    return { time = 'O(n)' }
   end
 
-  if line:match('bytes%.Buffer%s*') then
-    return { time = 'O(1)', is_call = true }
+  if line:match('bytes%.NewBuffer%s*%(') then
+    return { time = 'O(1)' }
+  end
+
+  if line:match('bytes%.NewBufferString%s*%(') then
+    return { time = 'O(n)' }
   end
 
   -- strconv operations
   if line:match('strconv%.Atoi%s*%(') or line:match('strconv%.Itoa%s*%(') then
-    return { time = 'O(n)', is_call = true }
+    return { time = 'O(n)' }
   end
 
   if line:match('strconv%.ParseInt%s*%(') or line:match('strconv%.FormatInt%s*%(') then
-    return { time = 'O(n)', is_call = true }
+    return { time = 'O(n)' }
   end
 
   -- regexp operations
   if line:match('regexp%.Compile%s*%(') then
-    return { time = 'O(n)', is_call = true }
+    return { time = 'O(n)' }
   end
 
   if line:match('regexp%.Match%s*%(') or line:match('Regexp%.Match%s*%(') or line:match('Regexp%.Find%s*%(') or line:match('Regexp%.FindAll%s*%(') then
-    return { time = 'O(n)', is_call = true }
+    return { time = 'O(n)' }
   end
 
   -- I/O operations
   if line:match('bufio%.NewReader') or line:match('bufio%.NewWriter') then
-    return { time = 'O(1)', is_call = true }
+    return { time = 'O(1)' }
   end
 
   if line:match('%.Scan%s*%(') and line:match('bufio') then
-    return { time = 'O(n)', is_call = true }
-  end
-
-  if line:match('ioutil%.ReadFile%s*%(') or line:match('ioutil%.WriteFile%s*%(') then
-    return { time = 'O(n)', is_call = true }
+    return { time = 'O(n)' }
   end
 
   if line:match('io%.ReadFull%s*%(') or line:match('io%.Copy%s*%(') then
-    return { time = 'O(n)', is_call = true }
+    return { time = 'O(n)' }
   end
 
   -- JSON operations
   if line:match('json%.Unmarshal%s*%(') or line:match('json%.Marshal%s*%(') then
-    return { time = 'O(n)', is_call = true }
+    return { time = 'O(n)' }
   end
 
   -- Hashing and crypto
   if line:match('sha256%.Sum256%s*%(') or line:match('md5%.Sum%s*%(') then
-    return { time = 'O(n)', is_call = true }
+    return { time = 'O(n)' }
   end
 
   if line:match('sha256%.New%s*%(') or line:match('sha512%.New%s*%(') or line:match('md5%.New%s*%(') then
-    return { time = 'O(1)', is_call = true }
+    return { time = 'O(1)' }
   end
 
   if line:match('Hash%.Write%s*%(') or line:match('h%.Write%s*%(') or line:match('h%.Sum%s*%(') then
-    return { time = 'O(n)', is_call = true }
+    return { time = 'O(n)' }
   end
 
   -- time operations
   if line:match('time%.Now%s*%(') or line:match('time%.Sleep%s*%(') then
-    return { time = 'O(1)', is_call = true }
+    return { time = 'O(1)' }
   end
 
   if line:match('time%.Since%s*%(') or line:match('time%.Until%s*%(') then
-    return { time = 'O(1)', is_call = true }
+    return { time = 'O(1)' }
   end
 
   -- sync primitives
   if line:match('%.Lock%s*%(') or line:match('%.Unlock%s*%(') then
-    return { time = 'O(1)', is_call = true }
+    return { time = 'O(1)' }
   end
 
   if line:match('sync%.Once%.Do%s*%(') then
-    return { time = 'O(1)', is_call = true }
+    return { time = 'O(1)' }
   end
 
   if line:match('%.WaitGroup%.Wait%s*%(') or line:match('wg%.Wait%s*%(') then
-    return { time = 'O(n)', is_call = true }
+    return { time = 'O(n)' }
   end
 
   -- context operations
   if line:match('context%.Background%s*%(') or line:match('context%.TODO%s*%(') then
-    return { time = 'O(1)', is_call = true }
+    return { time = 'O(1)' }
   end
 
   if
@@ -454,22 +418,22 @@ local function analyze_function_call(line)
     or line:match('context%.WithCancel%s*%(')
     or line:match('context%.WithDeadline%s*%(')
   then
-    return { time = 'O(1)', is_call = true }
+    return { time = 'O(1)' }
   end
 
   -- select statement - channel operations
   if line:match('^%s*select%s*{') then
-    return { time = 'O(1)', is_call = true }
+    return { time = 'O(1)' }
   end
 
   -- goroutine - creates concurrent execution
   if line:match('^%s*go%s+') then
-    return { time = 'O(n)', is_call = true }
+    return { time = 'O(n)' }
   end
 
   -- defer - O(1) for registration
   if line:match('^%s*defer%s+') then
-    return { time = 'O(1)', is_call = true }
+    return { time = 'O(1)' }
   end
 
   -- Bit operations
@@ -479,7 +443,7 @@ local function analyze_function_call(line)
     or line:match('bits%.TrailingZeros%s*%(')
     or line:match('bits%.RotateLeft%s*%(')
   then
-    return { time = 'O(1)', is_call = true }
+    return { time = 'O(1)' }
   end
 
   -- math package operations
@@ -491,7 +455,7 @@ local function analyze_function_call(line)
     or line:match('math%.Floor%s*%(')
     or line:match('math%.Round%s*%(')
   then
-    return { time = 'O(1)', is_call = true }
+    return { time = 'O(1)' }
   end
 
   if
@@ -500,7 +464,7 @@ local function analyze_function_call(line)
     or line:match('math%.Log%s*%(')
     or line:match('math%.Exp%s*%(')
   then
-    return { time = 'O(1)', is_call = true }
+    return { time = 'O(1)' }
   end
 
   if
@@ -509,16 +473,16 @@ local function analyze_function_call(line)
     or line:match('math%.Tan%s*%(')
     or line:match('math%.Atan2%s*%(')
   then
-    return { time = 'O(1)', is_call = true }
+    return { time = 'O(1)' }
   end
 
   -- math/big operations
   if line:match('big%.NewInt%s*%(') or line:match('big%.NewFloat%s*%(') then
-    return { time = 'O(1)', is_call = true }
+    return { time = 'O(1)' }
   end
 
-  if line:match('big%.Int%.Add%s*%(') or line:match('%.Add%s*%(.*big') or line:match('new%s*%(big') then
-    return { time = 'O(n)', is_call = true }
+  if line:match('big%.Int%.Add%s*%(') or line:match('big%.Int%.Mul%s*%(') or line:match('big%.Int%.Div%s*%(') or line:match('big%.Int%.Sub%s*%(') or line:match('%.Add%s*%(') and line:match('big%.Int') or line:match('%.Mul%s*%(') and line:match('big%.Int') or line:match('%.Div%s*%(') and line:match('big%.Int') or line:match('%.Sub%s*%(') and line:match('big%.Int') then
+    return { time = 'O(n)' }
   end
 
   -- sort.SearchInts, sort.SearchStrings
@@ -527,123 +491,133 @@ local function analyze_function_call(line)
     or line:match('sort%.SearchStrings%s*%(')
     or line:match('sort%.SearchFloat64s%s*%(')
   then
-    return { time = 'O(log n)', is_call = true }
+    return { time = 'O(log n)' }
   end
 
   -- container/heap operations
-  if line:match('heap%.Init%s*%(') or line:match('heap%.Push%s*%(') or line:match('heap%.Pop%s*%(') then
-    return { time = 'O(log n)', is_call = true }
+  if line:match('heap%.Init%s*%(') then
+    return { time = 'O(n)' }
+  end
+
+  if line:match('heap%.Push%s*%(') or line:match('heap%.Pop%s*%(') or line:match('heap%.Fix%s*%(') or line:match('heap%.Remove%s*%(') then
+    return { time = 'O(log n)' }
   end
 
   -- container/list operations
   if line:match('list%.New%s*%(') then
-    return { time = 'O(1)', is_call = true }
+    return { time = 'O(1)' }
   end
 
   if line:match('%.PushBack%s*%(') or line:match('%.PushFront%s*%(') or line:match('%.Remove%s*%(') then
-    return { time = 'O(1)', is_call = true }
+    return { time = 'O(1)' }
   end
 
   -- container/ring operations
   if line:match('ring%.New%s*%(') then
-    return { time = 'O(n)', is_call = true }
+    return { time = 'O(n)' }
   end
 
   -- slices package
-  if line:match('slices%.Sort%s*%(') then
-    return { time = 'O(n log n)', is_call = true }
+  if line:match('slices%.Sort%s*%(') or line:match('slices%.SortFunc%s*%(') or line:match('slices%.SortStableFunc%s*%(') then
+    return { time = 'O(n log n)' }
+  end
+
+  if line:match('slices%.BinarySearch%s*%(') or line:match('slices%.BinarySearchFunc%s*%(') then
+    return { time = 'O(log n)' }
   end
 
   if
     line:match('slices%.Equal%s*%(')
     or line:match('slices%.Contains%s*%(')
     or line:match('slices%.Clone%s*%(')
+    or line:match('slices%.ContainsFunc%s*%(')
+    or line:match('slices%.IndexFunc%s*%(')
   then
-    return { time = 'O(n)', is_call = true }
+    return { time = 'O(n)' }
   end
 
   if line:match('slices%.Delete%s*%(') or line:match('slices%.Insert%s*%(') then
-    return { time = 'O(n)', is_call = true }
+    return { time = 'O(n)' }
   end
 
   -- maps package
-  if line:match('maps%.Keys%s*%(') or line:match('maps%.Values%s*%(') or line:match('maps%.Equal%s*%(') then
-    return { time = 'O(n)', is_call = true }
+  if line:match('maps%.Keys%s*%(') or line:match('maps%.Values%s*%(') or line:match('maps%.Equal%s*%(') or line:match('maps%.Clone%s*%(') or line:match('maps%.Copy%s*%(') then
+    return { time = 'O(n)' }
   end
 
   -- fmt package - printing operations
-  if line:match('fmt%.Print[^l]') or line:match('fmt%.Println%s*%(') or line:match('fmt%.Sprint%s*%(') or line:match('fmt%.Errorf%s*%(') then
-    return { time = 'O(n)', is_call = true }
+  if line:match('fmt%.Print%s*%(') or line:match('fmt%.Printf%s*%(') or line:match('fmt%.Println%s*%(') or line:match('fmt%.Sprint%s*%(') or line:match('fmt%.Errorf%s*%(') then
+    return { time = 'O(n)' }
   end
 
   if line:match('fmt%.Sprintf%s*%(') or line:match('fmt%.Fprintf%s*%(') then
-    return { time = 'O(n)', is_call = true }
+    return { time = 'O(n)' }
   end
 
   if line:match('fmt%.Scan%s*%(') or line:match('fmt%.Fscan%s*%(') then
-    return { time = 'O(n)', is_call = true }
+    return { time = 'O(n)' }
   end
 
   if line:match('fmt%.Sscan%s*%(') then
-    return { time = 'O(n)', is_call = true }
+    return { time = 'O(n)' }
   end
 
   -- os package - file operations
   if line:match('os%.Open%s*%(') or line:match('os%.Create%s*%(') then
-    return { time = 'O(1)', is_call = true }
+    return { time = 'O(1)' }
   end
 
   if line:match('os%.ReadFile%s*%(') or line:match('os%.WriteFile%s*%(') then
-    return { time = 'O(n)', is_call = true }
+    return { time = 'O(n)' }
   end
 
   if line:match('os%.Read%s*%(') or line:match('os%.Write%s*%(') then
-    return { time = 'O(n)', is_call = true }
+    return { time = 'O(n)' }
   end
 
   if line:match('os%.Stat%s*%(') or line:match('os%.Lstat%s*%(') then
-    return { time = 'O(1)', is_call = true }
+    return { time = 'O(1)' }
   end
 
   if line:match('os%.ReadDir%s*%(') then
-    return { time = 'O(n)', is_call = true }
+    return { time = 'O(n)' }
   end
 
   -- path/filepath package
   if line:match('filepath%.Walk%s*%(') or line:match('filepath%.WalkDir%s*%(') then
-    return { time = 'O(n)', is_call = true }
+    return { time = 'O(n)' }
   end
 
   if line:match('filepath%.Match%s*%(') then
-    return { time = 'O(n)', is_call = true }
+    return { time = 'O(n)' }
   end
 
   -- sort package - additional functions
   if line:match('sort%.IsSorted%s*%(') then
-    return { time = 'O(n)', is_call = true }
+    return { time = 'O(n)' }
   end
 
   if line:match('sort%.Reverse%s*%(') then
-    return { time = 'O(1)', is_call = true }
+    return { time = 'O(1)' }
   end
 
   -- encoding packages
   if line:match('binary%.Read%s*%(') or line:match('binary%.Write%s*%(') then
-    return { time = 'O(n)', is_call = true }
+    return { time = 'O(n)' }
   end
 
   if line:match('base64%.NewDecoder%s*%(') or line:match('base64%.NewEncoder%s*%(') then
-    return { time = 'O(n)', is_call = true }
+    return { time = 'O(n)' }
   end
 
   -- hash package
   if line:match('hash%.New%s*%(') then
-    return { time = 'O(1)', is_call = true }
+    return { time = 'O(1)' }
   end
 
   -- compress packages (gzip, zlib, etc.)
   if line:match('gzip%.NewWriter%s*%(') or line:match('gzip%.NewReader%s*%(') then
-    return { time = 'O(n)', is_call = true }
+    return { time = 'O(n)' }
   end
 
   return nil
