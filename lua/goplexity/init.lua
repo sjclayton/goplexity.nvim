@@ -33,10 +33,11 @@ local function run_analysis(bufnr)
   local summary = string.format('Time: %s | Space: %s | %d loops', results.overall_time, results.space, #results.loops)
 
   local constraints = config.get_constraints()
-  if constraints.n then
-    local time_warnings = config.should_warn(results.overall_time, results.space)
-    if #time_warnings > 0 then
-      for _, warning in ipairs(time_warnings) do
+  local has_constraints = constraints.n or constraints.memory_limit_mb
+  if has_constraints then
+    local warnings = config.should_warn(results.overall_time, results.space)
+    if #warnings > 0 then
+      for _, warning in ipairs(warnings) do
         vim.notify(warning, vim.log.levels.WARN)
       end
     else

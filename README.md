@@ -72,6 +72,46 @@ Complexity analyzer for Golang
 :Goplexity constraints 100000 2000 256  " Set problem constraints (n, time_ms, memory_mb)
 ```
 
+Running `:Goplexity` toggles hints on and off. Each time hints are shown, the
+buffer is re-analyzed so results are always fresh.
+
+### Output Example
+
+```go
+package main                    // 🧠 Time: O(n²) | Space: O(n)
+
+import "sort"
+
+func solve(n int) {             // 🧠 Time: O(n²) | Space: O(n)
+    arr := make([]int, n)
+
+    for i := 0; i < n; i++ {    // 🧠 T:O(n) S:O(1)
+        arr[i] = i
+    }
+
+    sort.Slice(arr, func(i, j int) bool {  // 🧠 T:O(n log n)
+        return arr[i] < arr[j]
+    })
+
+    for i := 0; i < n; i++ {    // 🧠 T:O(n²) S:O(1)
+        for j := i + 1; j < n; j++ {  // 🧠 T:O(n) S:O(1)
+            println(arr[i] + arr[j])
+        }
+    }
+}
+```
+
+### Constraint Warnings
+
+When `n`, `time_limit_ms`, and/or `memory_limit_mb` are set via `:Goplexity
+constraints` or `setup()`, the plugin warns if the detected complexity may
+exceed your limits:
+
+```
+⚠️  Time: O(n²) (~1.00e+11 ops) may exceed limit (1000ms)
+⚠️  Space: O(n²) (~250000000.0 MB) may exceed limit (256MB)
+```
+
 ## Configuration
 
 ```lua
@@ -112,6 +152,23 @@ local visible = goplexity.toggle()
 ## Requirements
 
 - Neovim 0.8+
+
+## Running Tests
+
+The plugin includes two test suites run headlessly via Neovim:
+
+```bash
+# Main suite: 57 tests covering all analyzer patterns
+nvim --headless --clean -u tests/test_runner.lua
+
+# Constraints suite: 62 tests covering :Goplexity constraints (warnings,
+# memory limits, randomized testing)
+nvim --headless --clean -u tests/test_constraints_e2e.lua
+```
+
+Each test fixture in `tests/*/main.go` is a real Go file with expected complexity
+declared in comments. The test runner analyzes each file and verifies the output
+matches expectations.
 
 ## License
 

@@ -65,10 +65,10 @@ end
 -- Convert complexity string to estimated operations
 local function complexity_to_ops(complexity_str, n)
   if not complexity_str or not n then return nil end
-  
+
   local ops = COMPLEXITY_OPS[complexity_str]
   if not ops then return nil end
-  
+
   -- Scale by n for complexity factors
   if complexity_str:match("n²") then
     ops = ops * n * n
@@ -76,20 +76,44 @@ local function complexity_to_ops(complexity_str, n)
     ops = ops * n * n * n
   elseif complexity_str:match("n log n") or complexity_str:match("n log") then
     ops = ops * n * 10
-  elseif complexity_str:match("O(n)") and not complexity_str:match("O(n²)") then
+  elseif complexity_str:match("O%(n%)") and not complexity_str:match("O%(n²%)") then
     ops = ops * n
-  elseif complexity_str:match("O(V+E)") or complexity_str:match("O(E log V)") then
+  elseif complexity_str:match("O%(V%+E%)") or complexity_str:match("O%(E log V%)") then
     ops = ops * n
   end
-  
+
   return ops
+end
+
+-- Convert space complexity string to estimated MB usage
+local function complexity_to_mb(complexity_str, n)
+  if not complexity_str or not n then return nil end
+
+  local ops = COMPLEXITY_OPS[complexity_str]
+  if not ops then return nil end
+
+  -- Scale by n for space factors (same scaling as time)
+  if complexity_str:match("n²") then
+    ops = ops * n * n
+  elseif complexity_str:match("n³") then
+    ops = ops * n * n * n
+  elseif complexity_str:match("n log n") or complexity_str:match("n log") then
+    ops = ops * n * 10
+  elseif complexity_str:match("O%(n%)") and not complexity_str:match("O%(n²%)") then
+    ops = ops * n
+  elseif complexity_str:match("O%(V%+E%)") or complexity_str:match("O%(E log V%)") then
+    ops = ops * n
+  end
+
+  -- Convert ops to rough MB estimate (1 op ≈ 1 byte, so divide by 1e6 for MB)
+  return ops / 1e6
 end
 
 -- Check if analysis should show warnings based on constraints
 function M.should_warn(time_complexity, space_complexity)
   local constraints = M.get_constraints()
   local warnings = {}
-  
+
   if constraints.n and constraints.time_limit_ms and time_complexity then
     local ops = complexity_to_ops(time_complexity, constraints.n)
     if ops then
@@ -99,7 +123,14 @@ function M.should_warn(time_complexity, space_complexity)
       end
     end
   end
-  
+
+  if constraints.n and constraints.memory_limit_mb and space_complexity then
+    local mb = complexity_to_mb(space_complexity, constraints.n)
+    if mb and mb > constraints.memory_limit_mb then
+      table.insert(warnings, string.format("⚠️  Space: %s (~%.1f MB) may exceed limit (%dMB)", space_complexity, mb, constraints.memory_limit_mb))
+    end
+  end
+
   return warnings
 end
 
