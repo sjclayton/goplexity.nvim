@@ -90,8 +90,10 @@ function M.toggle(bufnr)
 end
 
 -- Auto-refresh on save when hints are visible
+-- Auto-analyze on Go file open when enabled = true
 function M.setup_autocmds()
   local group = vim.api.nvim_create_augroup('GoplexityAutoRefresh', { clear = true })
+
   vim.api.nvim_create_autocmd('BufWritePost', {
     group = group,
     pattern = '*.go',
@@ -104,6 +106,19 @@ function M.setup_autocmds()
       end
     end,
     desc = 'Re-run goplexity analysis on save when hints are visible',
+  })
+
+  vim.api.nvim_create_autocmd('FileType', {
+    group = group,
+    pattern = 'go',
+    callback = function()
+      if config.config.enabled then
+        local bufnr = vim.api.nvim_get_current_buf()
+        display.visible = true
+        run_analysis(bufnr)
+      end
+    end,
+    desc = 'Auto-analyze Go files on open when enabled = true',
   })
 end
 
