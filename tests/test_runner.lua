@@ -12,29 +12,18 @@ local analyzer = require('goplexity.analyzer')
 -- Test results
 local passed = 0
 local failed = 0
-local warnings = 0
 local test_results = {}
 
--- Color helpers for terminal output
-local function green(s) return '\27[32m' .. s .. '\27[0m' end
-local function red(s) return '\27[31m' .. s .. '\27[0m' end
-local function yellow(s) return '\27[33m' .. s .. '\27[0m' end
-local function bold(s) return '\27[1m' .. s .. '\27[0m' end
-
 -- Extract complexity value from a comment line
--- Handles: "Expected Time Complexity: O(V+E) - visits all vertices"
--- Handles: "Expected Time Complexity: O(n log n) for sort, O(log n) for search"
 local function extract_complexity(line, prefix)
   local idx = line:find(prefix, 1, true)
   if not idx then return nil end
   local rest = line:sub(idx + #prefix):match('^%s*(.*)')
   if not rest then return nil end
 
-  -- Find the complexity value: starts with O( and ends with the matching )
   local start_idx = rest:find('O%(')
   if not start_idx then return nil end
 
-  -- Count parens to find the matching close
   local depth = 0
   for i = start_idx, #rest do
     local c = rest:sub(i, i)
@@ -57,7 +46,6 @@ local function parse_expected(lines)
     functions = {},
   }
 
-  -- Parse file-level expected complexity
   for _, line in ipairs(lines) do
     local time_val = extract_complexity(line, 'Expected Time Complexity:')
     local space_val = extract_complexity(line, 'Expected Space Complexity:')
@@ -65,8 +53,6 @@ local function parse_expected(lines)
     if space_val then expected.space = space_val end
   end
 
-  -- Parse per-function expected complexity from comments above function definitions
-  -- Only use explicit per-function comments, not file-level ones
   local file_level_time = expected.time
   for i, line in ipairs(lines) do
     local func_name = line:match('^func%s+%([^)]+%)%s+([%w_]+)%s*%(')
@@ -77,8 +63,6 @@ local function parse_expected(lines)
       local func_space = nil
       for j = math.max(1, i - 5), i - 1 do
         local comment = lines[j]
-        -- Only pick up comments that are specifically for this function
-        -- (not file-level comments that mention "mix" or contain multiple complexities)
         local ft = extract_complexity(comment, 'Expected Time Complexity:')
         local fs = extract_complexity(comment, 'Expected Space Complexity:')
         if ft and not comment:match('mix') and not comment:match('for sort') and not comment:match('for search') then
@@ -118,19 +102,14 @@ local function complexity_matches(actual, expected)
   local a = normalize_complexity(actual)
   local e = normalize_complexity(expected)
 
-  -- Exact match
   if a == e then return true end
-
-  -- O(n) matches O(n) amortized descriptions
   if e:match('O%(n%)') and a == 'O(n)' then return true end
-
-  -- O(1) matches "constant" descriptions
   if e:match('O%(1%)') and a == 'O(1)' then return true end
 
   return false
 end
 
--- Check if actual space is not worse than expected (lenient for rule-based analysis)
+-- Check if actual space is not worse than expected
 local function space_acceptable(actual, expected)
   if not expected then return true end
   if not actual then return false end
@@ -138,16 +117,9 @@ local function space_acceptable(actual, expected)
   local a = normalize_complexity(actual)
   local e = normalize_complexity(expected)
 
-  -- Exact match
   if a == e then return true end
-
-  -- If expected is O(n), O(1) is acceptable (literal-sized allocations)
   if e:match('^O%(n%)') and a == 'O(1)' then return true end
-
-  -- If expected is O(n), O(n) with different detail is fine
   if e:match('O%(n') and a == 'O(n)' then return true end
-
-  -- If expected mentions multiple complexities, accept any reasonable one
   if e:match('O%(n%)') and e:match('O%(1%)') then return true end
 
   return false
@@ -187,7 +159,6 @@ local function run_test(name, filepath)
 
   local issues = {}
 
-  -- Check overall time complexity
   if expected.time then
     if not complexity_matches(results.overall_time, expected.time) then
       table.insert(issues, string.format(
@@ -197,7 +168,6 @@ local function run_test(name, filepath)
     end
   end
 
-  -- Check overall space complexity (lenient - rule-based analysis can't always distinguish)
   if expected.space then
     if not space_acceptable(results.space, expected.space) then
       table.insert(issues, string.format(
@@ -207,9 +177,6 @@ local function run_test(name, filepath)
     end
   end
 
-  -- Check per-function complexity
-  -- Only check time, not space (space analysis is whole-file, not per-function)
-  -- Skip helper functions (Len, Less, Swap, Push, Pop) which are always O(1)
   local helper_funcs = { Len = true, Less = true, Swap = true, Push = true, Pop = true }
   for _, exp_func in ipairs(expected.functions) do
     if not helper_funcs[exp_func.name] then
@@ -235,16 +202,6 @@ local function run_test(name, filepath)
     end
   end
 
-  -- Check that loops were detected (if file has loops)
-  local has_loops = false
-  for _, line in ipairs(lines) do
-    if line:match('^%s*for%s') then
-      has_loops = true
-      break
-    end
-  end
-
-  -- Determine test status
   local status, message
   if #issues == 0 then
     status = 'PASS'
@@ -261,13 +218,6 @@ local function run_test(name, filepath)
     name = name,
     status = status,
     message = message,
-    details = {
-      overall_time = results.overall_time,
-      space = results.space,
-      loop_count = #results.loops,
-      function_count = #results.functions,
-      functions = results.functions,
-    },
   })
 
   vim.api.nvim_buf_delete(bufnr, { force = true })
@@ -349,33 +299,49 @@ function M.run()
     { name = 'method_receiver', file = test_dir .. 'method_receiver/main.go' },
   }
 
-  print(bold('goplexity.nvim - Test Results'))
-  print(string.rep('-', 80))
+  -- Print header
+  local header = string.format('%-25s %-6s %-12s %-12s %-7s %-11s',
+    'Test', 'Status', 'Time', 'Space', 'Loops', 'Functions')
+  print(header)
+  print(string.rep('-', #header))
 
   for _, test in ipairs(tests) do
     run_test(test.name, test.file)
   end
 
-  -- Print results
+  -- Print results table
   for _, result in ipairs(test_results) do
-    local status_str
+    local status_str = result.status
+    local time_str = ''
+    local space_str = ''
+    local loops_str = ''
+    local funcs_str = ''
+
     if result.status == 'PASS' then
-      status_str = green('PASS')
+      local parts = {}
+      for part in result.message:gmatch('[^|]+') do
+        table.insert(parts, part:match('^%s*(.-)%s*$'))
+      end
+      time_str = parts[1]:match('Time:%s*(.*)') or ''
+      space_str = parts[2]:match('Space:%s*(.*)') or ''
+      loops_str = parts[3]:match('Loops:%s*(.*)') or ''
+      funcs_str = parts[4]:match('Functions:%s*(.*)') or ''
     else
-      status_str = red('FAIL')
+      time_str = '—'
+      space_str = '—'
+      loops_str = '—'
+      funcs_str = '—'
     end
-    print(string.format('%-25s %s  %s', result.name, status_str, result.message))
+
+    print(string.format('%-25s %-6s %-12s %-12s %-7s %-11s',
+      result.name, status_str, time_str, space_str, loops_str, funcs_str))
   end
 
-  print(string.rep('-', 80))
+  print(string.rep('-', #header))
   local total = passed + failed
-  print(string.format('Total: %d | %s | %s',
-    total,
-    green(string.format('Passed: %d', passed)),
-    failed > 0 and red(string.format('Failed: %d', failed)) or ''
-  ))
+  local summary = string.format('Total: %d  Passed: %d  Failed: %d', total, passed, failed)
+  print(summary)
 
-  -- Exit with appropriate code
   if failed > 0 then
     vim.cmd('cq')
   else

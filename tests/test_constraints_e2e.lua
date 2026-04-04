@@ -12,17 +12,13 @@ local M = {}
 local passed = 0
 local failed = 0
 
-local function green(s) return '\27[32m' .. s .. '\27[0m' end
-local function red(s) return '\27[31m' .. s .. '\27[0m' end
-local function bold(s) return '\27[1m' .. s .. '\27[0m' end
-
 local function assert_eq(name, actual, expected)
   if actual == expected then
     passed = passed + 1
-    print(string.format('  %s %-55s %s', green('PASS'), name, tostring(actual)))
+    print(string.format('  PASS  %-55s %s', name, tostring(actual)))
   else
     failed = failed + 1
-    print(string.format('  %s %-55s expected %s, got %s', red('FAIL'), name, tostring(expected), tostring(actual)))
+    print(string.format('  FAIL  %-55s expected %s, got %s', name, tostring(expected), tostring(actual)))
   end
 end
 
@@ -39,15 +35,8 @@ local function make_go_buf(code)
   return buf
 end
 
--- Verify the full command flow: :Goplexity constraints N TIME MEM
--- 1. Parses args correctly
--- 2. Stores in config.user_constraints
--- 3. get_constraints() merges with defaults
--- 4. should_warn() uses merged constraints
--- 5. run_analysis() calls should_warn() after analysis
-
 function M.run()
-  print(bold('goplexity.nvim - :Goplexity constraints Verification'))
+  print('goplexity.nvim - :Goplexity constraints Verification')
   print(string.rep('-', 80))
 
   -- Step 1: Verify command handler parses and stores args
@@ -396,11 +385,7 @@ function M.run()
   -- Summary
   print('\n' .. string.rep('-', 80))
   local total = passed + failed
-  print(string.format('Total: %d | %s | %s',
-    total,
-    green(string.format('Passed: %d', passed)),
-    failed > 0 and red(string.format('Failed: %d', failed)) or ''
-  ))
+  print(string.format('Total: %d  Passed: %d  Failed: %d', total, passed, failed))
 
   if failed > 0 then
     vim.cmd('cq')
