@@ -16,7 +16,7 @@ Complexity analyzer for Golang
 ### Time Complexity Detection
 
 - **Loops**: traditional `for i:=0; i<n; i++`, range-based `for _, v := range`, condition-based `for condition`, infinite `for { }`, and constant-bound `for i := 0; i < 10; i++` → O(1)
-- **Logarithmic loops**: `i *= 2`, `i /= 2`, `i <<= 1`, `i >>= 1`, `i += i` → O(log n)
+- **Logarithmic loops**: `i *= 2`, `i /= 2`, `i <<= 1`, `i >>= 1`, `i += i` → O(log n) (detected in both increment clause and loop body)
 - **Square root loops**: `i * i <= n` condition → O(√n)
 - **Nested complexity multiplication**: correctly computes O(n²), O(n³), O(n log n), O(n² log n), O(n² log log n), O(log² n), O(n√n), O(n × 2^n), O(n × n!)
 - **Sorting**: `sort.Slice`, `sort.SliceStable`, `sort.Ints`, `sort.Strings`, `sort.Search` O(log n), `sort.SearchInts`, `sort.SearchFloat64s`, `sort.IsSorted`, `sort.Reverse`, heap operations
@@ -50,9 +50,10 @@ Complexity analyzer for Golang
 - Slices: `make([]int, n)`, `make([]int, 0, n)`
 - Maps: `make(map[K]V)`
 - Channels: `make(chan T)`, `make(chan T, buffer)`
+- Allocations: `new(Type)` → O(1)
 - 2D structures: `make([][]int, n)` → O(n²), `make([]map[K]V, n)` → O(n²)
 - Correctly excludes function signature parameters (references, not allocations)
-- Correctly excludes slice/map literals (`[]int{1, 2, 3}`)
+- Correctly excludes small slice/map literals (`[]int{1, 2, 3}`)
 - Correctly identifies O(1) for functions without allocations
 
 ## Installation

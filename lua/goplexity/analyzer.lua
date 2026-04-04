@@ -213,7 +213,7 @@ end
 
 -- Scan loop body for log increment patterns in the first few lines
 local function scan_body_for_log_increment(lines, start_line)
-  local brace_count = 0
+  local brace_count = 1 -- Opening brace is on the for line
   local scanned = 0
   for i = start_line, math.min(start_line + 10, #lines) do
     local line = lines[i]
