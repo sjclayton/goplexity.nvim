@@ -12,9 +12,6 @@ Thumbs.db
 luac.out
 
 # Testing
-test/
-tests/
-.tests/
 *.log
 
 # Build

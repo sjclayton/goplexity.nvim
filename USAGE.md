@@ -2,20 +2,14 @@
 
 ## Commands
 
-### Complexity Analysis
+### Toggle Complexity Hints
 
 ```vim
-:Goplexity complexity
+:Goplexity              " Toggle hints (analyze + show/hide)
+:Goplexity toggle       " Same as above
 ```
 
-Analyzes the current buffer and displays inline complexity hints as virtual text.
-
-### Visibility Control
-
-```vim
-:Goplexity hide       " Remove all hints
-:Goplexity toggle     " Toggle visibility
-```
+Running `:Goplexity` with no arguments toggles complexity hints on and off. Each time hints are shown, the current buffer is re-analyzed so results are always fresh. Returns `true` if hints are now visible, `false` if hidden.
 
 ### Problem Constraints
 
@@ -71,8 +65,19 @@ require('goplexity').setup({
 ### Custom Keybindings
 
 ```lua
-vim.keymap.set('n', '<leader>tc', ':Goplexity complexity<CR>', { desc = 'Analyze complexity' })
-vim.keymap.set('n', '<leader>tt', ':Goplexity toggle<CR>', { desc = 'Toggle hints' })
+vim.keymap.set('n', '<leader>tc', ':Goplexity<CR>', { desc = 'Toggle complexity hints' })
+```
+
+## Lua API
+
+Other plugins can toggle Goplexity and check its status via the return value:
+
+```lua
+local goplexity = require('goplexity')
+
+-- Toggle hints (returns true if shown, false if hidden)
+-- Re-runs analysis each time hints are shown
+local visible = goplexity.toggle()
 ```
 
 ## Complexity Patterns
@@ -82,10 +87,18 @@ vim.keymap.set('n', '<leader>tt', ':Goplexity toggle<CR>', { desc = 'Toggle hint
 | Pattern                     | Complexity     |
 | --------------------------- | -------------- |
 | `for i := 0; i < n; i++`    | O(n)           |
+| `for _, v := range slice`   | O(n)           |
+| `for condition { }`         | O(n)           |
+| `for { }`                   | O(n)           |
+| `for i := 0; i < 10; i++`   | O(1)           |
 | `for i := 0; i < n; i *= 2` | O(log n)       |
 | `for i := 0; i < n; i /= 2` | O(log n)       |
+| `for i := 0; i < n; i <<= 1`| O(log n)       |
+| `for i := 0; i < n; i >>= 1`| O(log n)       |
+| `for i := 0; i < n; i += i` | O(log n)       |
 | `for i := 0; i*i < n; i++`  | O(√n)          |
 | Nested: `for { for { } }`   | O(n²)          |
+| Nested: `for { for { for { } } }` | O(n³)    |
 | `sort.Slice(...)`           | O(n log n)     |
 | `sort.Search(...)`          | O(log n)       |
 | `append(...)`               | O(1) amortized |
@@ -100,6 +113,7 @@ vim.keymap.set('n', '<leader>tt', ':Goplexity toggle<CR>', { desc = 'Toggle hint
 | `make([][]int, n)`  | O(n²)      |
 | `make(map[K]V)`     | O(n)       |
 | `make(chan T)`      | O(1)       |
+| `make(chan T, n)`   | O(n)       |
 
 ## Examples
 
@@ -108,18 +122,20 @@ vim.keymap.set('n', '<leader>tt', ':Goplexity toggle<CR>', { desc = 'Toggle hint
 ```go
 package main
 
-func solve(n int) {
-    arr := make([]int, n)  // Space: O(n)
+import "sort"
 
-    for i := 0; i < n; i++ {  // 🧠 O(n)
+func solve(n int) {
+    arr := make([]int, n)
+
+    for i := 0; i < n; i++ {
         arr[i] = i
     }
 
-    sort.Slice(arr, func(i, j int) bool {  // 🧠 O(n log n)
+    sort.Slice(arr, func(i, j int) bool {
         return arr[i] < arr[j]
     })
 
-    for i := 0; i < n; i++ {  // 🧠 O(n²)
+    for i := 0; i < n; i++ {
         for j := i + 1; j < n; j++ {
             println(arr[i] + arr[j])
         }
@@ -127,16 +143,34 @@ func solve(n int) {
 }
 ```
 
-After running `:Goplexity complexity`, you'll see:
+After running `:Goplexity`, you'll see virtual text annotations like:
 
-- `🧠 Time: O(n²) | Space: O(n)` at the top of the file
-- Individual complexity hints beside each loop: `🧠 T:O(n)`
-- Per-function complexity summaries at each function definition
+```
+package main                    // 🧠 Time: O(n²) | Space: O(n)
+
+func solve(n int) {             // 🧠 Time: O(n²) | Space: O(n)
+    arr := make([]int, n)
+
+    for i := 0; i < n; i++ {    // 🧠 T:O(n) S:O(1)
+        arr[i] = i
+    }
+
+    sort.Slice(arr, func(i, j int) bool {  // 🧠 T:O(n log n)
+        return arr[i] < arr[j]
+    })
+
+    for i := 0; i < n; i++ {    // 🧠 T:O(n²) S:O(1)
+        for j := i + 1; j < n; j++ {  // 🧠 T:O(n) S:O(1)
+            println(arr[i] + arr[j])
+        }
+    }
+}
+```
 
 ### Binary Search Pattern
 
 ```go
-for i := 1; i < n; i *= 2 { // 🧠 O(log n)
+for i := 1; i < n; i *= 2 { // 🧠 T:O(log n) S:O(1)
     println(i)
 }
 ```
@@ -144,12 +178,13 @@ for i := 1; i < n; i *= 2 { // 🧠 O(log n)
 ### Square Root Loop
 
 ```go
-for i := 0; i*i < n; i++ { // 🧠 O(√n)
+for i := 0; i*i < n; i++ { // 🧠 T:O(√n) S:O(1)
     println(i)
 }
 ```
 
 ## Tips
 
-1. **Constraints**: Set problem limits with `:Goplexity constraints` for warnings
-2. **Toggle**: Use `:Goplexity toggle` to hide hints while focusing on logic
+1. **Constraints**: Set problem limits with `:Goplexity constraints` for TLE/MLE warnings
+2. **Toggle**: Use `:Goplexity toggle` to hide or re-analyze hints
+3. **External detection**: Other plugins can call `goplexity.toggle()` and check the return value

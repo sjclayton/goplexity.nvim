@@ -10,9 +10,9 @@ vim.g.loaded_goplexity = 1
 vim.api.nvim_create_user_command("Goplexity", function(opts)
 	require("goplexity").command(opts.fargs)
 end, {
-	nargs = "+",
+	nargs = "*",
 	complete = function()
-		return { "complexity", "hide", "toggle", "constraints" }
+		return { "toggle", "constraints" }
 	end,
 	desc = "Goplexity complexity visualizer commands",
 })

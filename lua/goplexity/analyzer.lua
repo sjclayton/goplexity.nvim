@@ -10,24 +10,10 @@ local CONSTANTS = {
 
 -- Pattern matchers for control structures
 local CONTROL_PATTERNS = {
-   IF = '^if%s*%(',
    FOR_TRADITIONAL = '^for%s+[%w_]', -- Go traditional: for i := 0; ... or for i = 0; ...
    RANGE_FOR = '^for%s+[%w_].*:?=%s*[^=].*range', -- for i, v := range slice
    FOR_COND = '^for%s+[^;{]', -- Go while-style: for condition { or for condition
-   SWITCH = '^switch%s*%(',
 }
-
--- Complexity class for easier manipulation
-local Complexity = {}
-Complexity.__index = Complexity
-
-function Complexity.new(time, space, description)
-  return setmetatable({
-    time = time or CONSTANTS.DEFAULT_COMPLEXITY,
-    space = space or CONSTANTS.DEFAULT_COMPLEXITY,
-    description = description or '',
-  }, Complexity)
-end
 
 -- Complexity hierarchy (from lowest to highest)
 local COMPLEXITY_HIERARCHY = {
@@ -152,34 +138,22 @@ local function analyze_loop_increment(increment_line)
   return 'O(n)' -- Default: linear
 end
 
--- Analyze for loop complexity from its structure
-local function analyze_for_loop(line)
-   -- Range-based for loop: for i, v := range slice
-   if line:match('for%s*%(.-%s*:%s*.-%)') then
-     return 'O(n)'
-   end
- 
-   -- Traditional for loop: for (init; condition; increment)
-   local _, _, increment = line:match('for%s*%((.-)%;(.-)%;(.-)%)')
- 
-   if increment then
-     return analyze_loop_increment(increment)
-   end
- 
-   return 'O(n)' -- Default assumption
-end
-
 -- Detect binary search pattern by analyzing function content
 local function detect_binary_search(lines, start_line)
   local func_content = {}
+  local brace_count = 0
   for i = start_line, #lines do
     local line = lines[i]
     table.insert(func_content, line)
-    -- Stop at closing brace (but not nested braces)
-    -- Count braces to handle nesting properly
-    local opens = (line:gsub('{', ''):gsub('}', ''))
-    -- Simple approach: stop at first line that is just a closing brace with optional whitespace
-    if line:match('^%s*}%s*$') and #func_content > 1 then
+    for c in line:gmatch('.') do
+      if c == '{' then
+        brace_count = brace_count + 1
+      end
+      if c == '}' then
+        brace_count = brace_count - 1
+      end
+    end
+    if brace_count == 0 and #func_content > 1 then
       break
     end
   end
@@ -231,6 +205,7 @@ local function detect_divide_conquer(lines, start_line, func_name)
   local has_slice_operation = content:match(':%s*%]') or content:match('%[:%s*%w+%s*%]')
   local has_recursive_call = content:match(func_name .. '%s*%(')
   local has_partition_pattern = content:match('left.*right') and content:match('append')
+  local has_mid_split = content:match('mid') and content:match(':%s*%]')
 
   -- Merge sort: name contains "merge" and has slice operations with recursive calls
   local is_merge_sort = (func_name:match('merge') or func_name:match('Merge'))
@@ -241,33 +216,19 @@ local function detect_divide_conquer(lines, start_line, func_name)
     and (has_slice_operation or has_partition_pattern)
     and has_recursive_call
 
-  -- Generic divide-and-conquer: recursive call with slice operations or partition pattern
+  -- Generic divide-and-conquer: requires name suggesting D&C + recursive calls + split pattern
+  local has_dc_name = func_name:match('sort') or func_name:match('merge')
+    or func_name:match('split') or func_name:match('divide')
   if is_merge_sort then
     return 'O(n log n)', 'O(n)' -- time, space
   elseif is_quick_sort then
     return 'O(n log n)', 'O(log n)' -- time, space (average)
-  elseif has_recursive_call and (has_slice_operation or has_partition_pattern) then
+  elseif has_dc_name and has_recursive_call and has_mid_split then
     -- Generic divide-and-conquer detected
     return 'O(n log n)', 'O(n)' -- Assume O(n log n) for divide-and-conquer
   end
 
   return nil, nil -- Not detected
-end
-
--- Analyze while loop complexity from its condition
-local function analyze_while_loop(line, lines, current_line)
-  -- Detect multiplication/division patterns in condition
-  if line:match('while%s*%(.*[*/].*%)') then
-    return 'O(log n)'
-  end
-
-  -- Check for binary search pattern
-  local is_binary_search = detect_binary_search(lines, current_line)
-  if is_binary_search then
-    return 'O(log n)'
-  end
-
-  return 'O(n)' -- Default assumption
 end
 
 -- Analyze Go for loop complexity from its structure
@@ -279,9 +240,19 @@ local function analyze_go_for_loop(line, lines, current_line)
 
   -- Go traditional for loop: for i := 0; i < n; i++
   -- Extract increment to detect logarithmic patterns
-  local _, _, increment = line:match('for%s+.-;.-;%s*(.-)%s*%{?%s*$')
+  local init, cond, increment = line:match('for%s+(.-);%s*(.-);%s*(.-)%s*%{?%s*$')
 
   if increment then
+    -- Check if the condition uses ONLY a literal number > 1 (constant iterations)
+    -- e.g., "i < 10" but NOT "i < n-1", "i < len(arr)", or "i > 0"
+    -- The number must be >= 2 (single digit 2-9 or multi-digit)
+    if cond and (cond:match('^%s*[%w_]+%s*[<>]=?%s*[2-9]%s*$') or cond:match('^%s*[%w_]+%s*[<>]=?%s*%d%d+%s*$')) then
+      return 'O(1)' -- Constant number of iterations
+    end
+    -- Check for square root pattern in condition: i*i <= n
+    if cond and cond:match('[%w_]+%s*%*%s*[%w_]+%s*[<>]=?') then
+      return 'O(√n)'
+    end
     -- Check for logarithmic patterns
     if
       increment:match('[%w_]+%s*%*=%s*2') -- i *= 2
@@ -311,6 +282,10 @@ local function analyze_go_for_loop(line, lines, current_line)
     if line:match('^for%s*{$') then
       return 'O(n)' -- Default assumption for infinite loops
     end
+    -- Check for square root pattern in condition: i*i <= n
+    if line:match('[%w_]+%s*%*%s*[%w_]+%s*[<>]=?') then
+      return 'O(√n)'
+    end
     -- Check for binary search pattern
     if detect_binary_search(lines, current_line) then
       return 'O(log n)'
@@ -331,7 +306,11 @@ local function analyze_function_call(line)
     return { time = 'O(n log n)', is_call = true }
   end
 
-  if line:match('sort%.Search%s*%(') or line:match('sort%.Ints%s*%(') or line:match('sort%.Strings%s*%(') then
+  if line:match('sort%.Search%s*%(') then
+    return { time = 'O(log n)', is_call = true }
+  end
+
+  if line:match('sort%.Ints%s*%(') or line:match('sort%.Strings%s*%(') then
     return { time = 'O(n log n)', is_call = true }
   end
 
@@ -406,7 +385,7 @@ local function analyze_function_call(line)
     return { time = 'O(n)', is_call = true }
   end
 
-  if line:match('regexp%.Match%s*%(') or line:match('Regexp%.Find%s*%(') or line:match('Regexp%.FindAll%s*%(') then
+  if line:match('regexp%.Match%s*%(') or line:match('Regexp%.Match%s*%(') or line:match('Regexp%.Find%s*%(') or line:match('Regexp%.FindAll%s*%(') then
     return { time = 'O(n)', is_call = true }
   end
 
@@ -415,7 +394,7 @@ local function analyze_function_call(line)
     return { time = 'O(1)', is_call = true }
   end
 
-  if line:match('Scanner%.Scan%s*%(') then
+  if line:match('%.Scan%s*%(') and line:match('bufio') then
     return { time = 'O(n)', is_call = true }
   end
 
@@ -433,7 +412,15 @@ local function analyze_function_call(line)
   end
 
   -- Hashing and crypto
-  if line:match('crypto/sha256%.Sum256%s*%(') or line:match('crypto/md5%.Sum%s*%(') then
+  if line:match('sha256%.Sum256%s*%(') or line:match('md5%.Sum%s*%(') then
+    return { time = 'O(n)', is_call = true }
+  end
+
+  if line:match('sha256%.New%s*%(') or line:match('sha512%.New%s*%(') or line:match('md5%.New%s*%(') then
+    return { time = 'O(1)', is_call = true }
+  end
+
+  if line:match('Hash%.Write%s*%(') or line:match('h%.Write%s*%(') or line:match('h%.Sum%s*%(') then
     return { time = 'O(n)', is_call = true }
   end
 
@@ -447,7 +434,7 @@ local function analyze_function_call(line)
   end
 
   -- sync primitives
-  if line:match('sync%.NewMutex%s*%(') or line:match('sync%.NewWaitGroup%s*%(') then
+  if line:match('%.Lock%s*%(') or line:match('%.Unlock%s*%(') then
     return { time = 'O(1)', is_call = true }
   end
 
@@ -455,7 +442,7 @@ local function analyze_function_call(line)
     return { time = 'O(1)', is_call = true }
   end
 
-  if line:match('sync%.WaitGroup%.Wait%s*%(') then
+  if line:match('%.WaitGroup%.Wait%s*%(') or line:match('wg%.Wait%s*%(') then
     return { time = 'O(n)', is_call = true }
   end
 
@@ -489,10 +476,10 @@ local function analyze_function_call(line)
 
   -- Bit operations
   if
-    line:match('bits%. OnesCount%s*%(')
-    or line:match('bits%. LeadingZeros%s*%(')
-    or line:match('bits%. TrailingZeros%s*%(')
-    or line:match('bits%. RotateLeft%s*%(')
+    line:match('bits%.OnesCount%s*%(')
+    or line:match('bits%.LeadingZeros%s*%(')
+    or line:match('bits%.TrailingZeros%s*%(')
+    or line:match('bits%.RotateLeft%s*%(')
   then
     return { time = 'O(1)', is_call = true }
   end
@@ -532,12 +519,7 @@ local function analyze_function_call(line)
     return { time = 'O(1)', is_call = true }
   end
 
-  if
-    line:match('Int%.Add%s*%(')
-    or line:match('Int%.Mul%s*%(')
-    or line:match('Int%.Div%s*%(')
-    or line:match('Int%.Sub%s*%(')
-  then
+  if line:match('big%.Int%.Add%s*%(') or line:match('%.Add%s*%(.*big') or line:match('new%s*%(big') then
     return { time = 'O(n)', is_call = true }
   end
 
@@ -545,7 +527,7 @@ local function analyze_function_call(line)
   if
     line:match('sort%.SearchInts%s*%(')
     or line:match('sort%.SearchStrings%s*%(')
-    or line:match('sort%.SearchFloat%s*%(')
+    or line:match('sort%.SearchFloat64s%s*%(')
   then
     return { time = 'O(log n)', is_call = true }
   end
@@ -560,7 +542,7 @@ local function analyze_function_call(line)
     return { time = 'O(1)', is_call = true }
   end
 
-  if line:match('List%.PushBack%s*%(') or line:match('List%.PushFront%s*%(') or line:match('List%.Remove%s*%(') then
+  if line:match('%.PushBack%s*%(') or line:match('%.PushFront%s*%(') or line:match('%.Remove%s*%(') then
     return { time = 'O(1)', is_call = true }
   end
 
@@ -570,13 +552,16 @@ local function analyze_function_call(line)
   end
 
   -- slices package
+  if line:match('slices%.Sort%s*%(') then
+    return { time = 'O(n log n)', is_call = true }
+  end
+
   if
-    line:match('slices%.Sort%s*%(')
-    or line:match('slices%.Equal%s*%(')
+    line:match('slices%.Equal%s*%(')
     or line:match('slices%.Contains%s*%(')
     or line:match('slices%.Clone%s*%(')
   then
-    return { time = 'O(n log n)', is_call = true }
+    return { time = 'O(n)', is_call = true }
   end
 
   if line:match('slices%.Delete%s*%(') or line:match('slices%.Insert%s*%(') then
@@ -589,7 +574,7 @@ local function analyze_function_call(line)
   end
 
   -- fmt package - printing operations
-  if line:match('fmt%.Print%s*%(') or line:match('fmt%.Sprint%s*%(') or line:match('fmt%.Errorf%s*%(') then
+  if line:match('fmt%.Print[^l]') or line:match('fmt%.Println%s*%(') or line:match('fmt%.Sprint%s*%(') or line:match('fmt%.Errorf%s*%(') then
     return { time = 'O(n)', is_call = true }
   end
 
@@ -601,7 +586,7 @@ local function analyze_function_call(line)
     return { time = 'O(n)', is_call = true }
   end
 
-  if line:match('fmt%.Sscan%s*%(') or line:match('fmt%.Fscan%s*%(') then
+  if line:match('fmt%.Sscan%s*%(') then
     return { time = 'O(n)', is_call = true }
   end
 
@@ -645,200 +630,258 @@ local function analyze_function_call(line)
   end
 
   -- encoding packages
-  if line:match('encoding%/binary%.Read%s*%(') or line:match('encoding%/binary%.Write%s*%(') then
+  if line:match('binary%.Read%s*%(') or line:match('binary%.Write%s*%(') then
     return { time = 'O(n)', is_call = true }
   end
 
-  if line:match('encoding%/base64%.NewDecoder%s*%(') then
+  if line:match('base64%.NewDecoder%s*%(') or line:match('base64%.NewEncoder%s*%(') then
     return { time = 'O(n)', is_call = true }
   end
 
   -- hash package
-  if line:match('hash%.Hash%s*%(') or line:match('hash%.HashFunc%s*%(') then
-    return { time = 'O(n)', is_call = true }
-  end
-
   if line:match('hash%.New%s*%(') then
     return { time = 'O(1)', is_call = true }
   end
 
   -- compress packages (gzip, zlib, etc.)
-  if line:match('compress%.Gzip%.NewWriter%s*%(') or line:match('compress%.Gzip%.NewReader%s*%(') then
+  if line:match('gzip%.NewWriter%s*%(') or line:match('gzip%.NewReader%s*%(') then
     return { time = 'O(n)', is_call = true }
   end
 
-  -- sort.SearchInts, sort.SearchStrings
-  if
-    line:match('sort%.SearchInts%s*%(')
-    or line:match('sort%.SearchStrings%s*%(')
-    or line:match('sort%.SearchFloat%s*%(')
-  then
-    return { time = 'O(log n)', is_call = true }
-  end
-
-  -- Custom algorithm function detection (supports methods with receivers)
-  local func_name = line:match('^func%s+%([^)]+%)%s+([%w_]+)%s*%(') or line:match('^func%s+([%w_]+)%s*%(')
-  if func_name then
-    -- Graph algorithms
-    if func_name:match('^dfs') or func_name:match('^bfs') then
-      return { time = 'O(V+E)', is_call = true }
-    end
-
-    if func_name:match('dijkstra') then
-      return { time = 'O(E log V)', is_call = true }
-    end
-
-    if func_name:match('floyd') or func_name:match('warshall') then
-      return { time = 'O(n³)', is_call = true }
-    end
-
-    if func_name:match('bellman') then
-      return { time = 'O(V×E)', is_call = true }
-    end
-
-    if func_name:match('topo') or func_name:match('topological') then
-      return { time = 'O(V+E)', is_call = true }
-    end
-
-    if func_name:match('kruskal') then
-      return { time = 'O(E log E)', is_call = true }
-    end
-
-    if func_name:match('prim') then
-      return { time = 'O(E log V)', is_call = true }
-    end
-
-    -- Searching algorithms
-    if func_name:match('binary') and not func_name:match('search') then
-      return { time = 'O(log n)', is_call = true }
-    end
-
-    -- Sorting algorithms
-    if func_name:match('merge') and func_name:match('sort') then
-      return { time = 'O(n log n)', is_call = true }
-    end
-
-    if func_name:match('quick') and func_name:match('sort') then
-      return { time = 'O(n log n)', is_call = true }
-    end
-
-    if func_name:match('heap') and func_name:match('sort') then
-      return { time = 'O(n log n)', is_call = true }
-    end
-
-    -- String algorithms
-    if func_name:match('kmp') or func_name:match('z_?algo') then
-      return { time = 'O(n)', is_call = true }
-    end
-
-    if func_name:match('manacher') then
-      return { time = 'O(n)', is_call = true }
-    end
-
-    -- Number theory
-    if func_name:match('sieve') then
-      return { time = 'O(n log log n)', is_call = true }
-    end
-
-    if func_name:match('gcd') or func_name:match('lcm') then
-      return { time = 'O(log n)', is_call = true }
-    end
-
-    if func_name:match('prime') and func_name:match('factor') then
-      return { time = 'O(√n)', is_call = true }
-    end
-
-    if func_name:match('fast') and func_name:match('pow') then
-      return { time = 'O(log n)', is_call = true }
-    end
-
-    -- Data structures
-    if func_name:match('segment') and func_name:match('tree') then
-      return { time = 'O(log n)', is_call = true }
-    end
-
-    if func_name:match('fenwick') or func_name:match('bit') then
-      return { time = 'O(log n)', is_call = true }
-    end
-
-    if func_name:match('disjoint') or func_name:match('union') or func_name:match('dsu') then
-      return { time = 'O(α(n))', is_call = true }
-    end
-
-    if func_name:match('trie') then
-      return { time = 'O(L)', is_call = true }
-    end
-
-    if func_name:match('lca') or func_name:match('lowest') and func_name:match('common') then
-      return { time = 'O(log n)', is_call = true }
-    end
-
-    if func_name:match('rmq') or func_name:match('sparse') then
-      return { time = 'O(n log n)', is_call = true }
-    end
-  end
-
   return nil
+end
+
+-- Detect algorithms by analyzing function content (structural patterns, not name-based)
+local function detect_algorithm_by_content(lines, start_line, func_name)
+  local func_content = {}
+  local brace_count = 0
+  for i = start_line, #lines do
+    local line = lines[i]
+    func_content[#func_content + 1] = line
+    for c in line:gmatch('.') do
+      if c == '{' then
+        brace_count = brace_count + 1
+      end
+      if c == '}' then
+        brace_count = brace_count - 1
+      end
+    end
+    if brace_count == 0 and #func_content > 1 then
+      break
+    end
+  end
+
+  local content = table.concat(func_content, ' ')
+
+  -- Graph: DFS/BFS - adjacency list + visited set + recursive/queue traversal
+  local has_adjacency = content:match('adj') or content:match('neighbors') or content:match('graph')
+  local has_visited = content:match('visited') or content:match('seen') or content:match('visit%s*%[')
+  local has_recursive_call = func_name and content:match(func_name .. '%s*%(')
+  local has_queue_ops = content:match('queue') or content:match('push%s*%(') or content:match('pop%s*%(')
+  local has_stack_ops = content:match('stack') or content:match('Push%s*%(') or content:match('Pop%s*%(')
+
+  -- Prim: visited set + min-weight/key selection (no queue or heap)
+  -- Must check BEFORE generic graph traversal to avoid false positive
+  local has_min_weight = (content:match('min') or content:match('Min')) and (content:match('weight') or content:match('cost') or content:match('key'))
+  if has_adjacency and has_visited and has_min_weight and not has_queue_ops and not content:match('heap') then
+    return 'O(V²)', 'O(V)'
+  end
+
+  if has_adjacency and has_visited then
+    if has_recursive_call or content:match('dfs') or content:match('DFS') then
+      return 'O(V+E)', 'O(V)'
+    elseif has_queue_ops or content:match('bfs') or content:match('BFS') then
+      return 'O(V+E)', 'O(V)'
+    else
+      return 'O(V+E)', 'O(V)'
+    end
+  end
+
+  -- Dijkstra: distance array + heap/priority queue + relaxation
+  local has_dist = content:match('dist')
+  local has_pq = content:match('heap') or content:match('priority') or content:match('container/heap')
+  local has_relaxation = content:match('dist%[') and content:match('%+') and content:match('<')
+  local has_sentinel = content:match('1e9') or content:match('math%.Inf') or content:match('MAX_INT')
+  if has_dist and has_pq and has_sentinel then
+    return 'O(E log V)', 'O(V)'
+  end
+
+  -- Bellman-Ford: n-1 iterations over edges + relaxation with sentinel value
+  local has_edges = content:match('edges') or content:match('Edge')
+  local has_n_minus_1 = content:match('n %- 1') or content:match('n%-1')
+  if has_dist and has_edges and has_sentinel and has_n_minus_1 then
+    return 'O(V×E)', 'O(V)'
+  end
+
+  -- Floyd-Warshall: triple nested loops + dist[i][j] pattern
+  local has_triple_loop = content:match('for .- = .* for .- = .* for .- =')
+  local has_dist_matrix = content:match('dist%[.*%]%[.*%]')
+  if has_triple_loop or (has_dist_matrix and content:match('min')) then
+    return 'O(n³)', 'O(n²)'
+  end
+
+  -- Topological sort: in-degree counting + queue
+  local has_indegree = content:match('indegree') or content:match('in_degree') or content:match('degree')
+  local has_zero_indegree = content:match('degree%s*==%s*0') or content:match('degree%s*==%s*0')
+  if has_adjacency and has_indegree and has_queue_ops then
+    return 'O(V+E)', 'O(V)'
+  end
+
+  -- Kruskal: edge sorting + union-find
+  local has_edge_sort = (content:match('sort') or content:match('Sort')) and content:match('edges')
+  local has_union_find = content:match('parent') and content:match('find') and content:match('union')
+  if has_edge_sort and has_union_find then
+    return 'O(E log E)', 'O(V)'
+  end
+
+  -- Prim: visited set + min-weight edge selection
+  local has_min_weight = content:match('min') and content:match('weight') or content:match('cost')
+  if has_adjacency and has_visited and has_min_weight and not has_pq then
+    return 'O(V²)', 'O(V)'
+  end
+
+  -- Binary search: left/right/mid pattern
+  local has_left_right = content:match('left') and content:match('right')
+  local has_mid = content:match('mid')
+  local has_bs_condition = content:match('left%s*<=') or content:match('left%s*<')
+  local has_mid_update = content:match('left%s*=%s*mid') or content:match('right%s*=%s*mid')
+  if has_left_right and has_mid and has_bs_condition and has_mid_update then
+    return 'O(log n)', 'O(1)'
+  end
+
+  -- Merge sort: mid split + recursive calls + merge
+  local has_mid_split = content:match('mid') and content:match(':%s*%]')
+  local has_merge = content:match('merge') or content:match('Merge')
+  if (has_mid_split or has_merge) and has_recursive_call then
+    return 'O(n log n)', 'O(n)'
+  end
+
+  -- Quick sort: pivot + partition + recursive calls
+  local has_pivot = content:match('pivot')
+  local has_partition = content:match('partition') or (content:match('left.*right') and content:match('swap'))
+  if (has_pivot or has_partition) and has_recursive_call then
+    return 'O(n log n)', 'O(log n)'
+  end
+
+  -- Sieve of Eratosthenes: boolean array + marking multiples
+  local has_bool_array = content:match('isPrime') or content:match('prime') or content:match('composite')
+  local has_sieve_loop = content:match('i%s*%*%s*i') or content:match('i%s*%*%s*2')
+  if has_bool_array and has_sieve_loop then
+    return 'O(n log log n)', 'O(n)'
+  end
+
+  -- GCD: modulo in loop/recursion
+  local has_gcd = content:match('%%%s*') and (content:match('gcd') or content:match('GCD') or (content:match('return') and content:match('%%%s*')))
+  if has_gcd and (content:match('b%s*==%s*0') or content:match('b%s*==%s*0')) then
+    return 'O(log n)', 'O(1)'
+  end
+
+  -- Union-Find/DSU: parent array + find with path compression
+  if has_union_find then
+    return 'O(α(n))', 'O(n)'
+  end
+
+  -- Kruskal: edge sorting + union-find
+  local has_edge_sort = (content:match('sort') or content:match('Sort')) and content:match('edges')
+  if has_edge_sort and has_union_find then
+    return 'O(E log E)', 'O(V)'
+  end
+
+  -- Trie: children map/array + character traversal
+  local has_trie_children = content:match('children') and (content:match('map') or content:match('%[26%]') or content:match('%[256%]') or content:match('rune') or content:match('byte'))
+  local has_char_traversal = content:match('%-%s*%\'a\'') or content:match('%-%s*%\'0\'') or content:match('for .- := range') or content:match('for .-, .- := range')
+  if has_trie_children and has_char_traversal then
+    return 'O(L)', 'O(L * Σ)'
+  end
+
+  -- Segment tree: array size 4*n + 2*node children
+  local has_seg_tree_size = content:match('4%s*%*%s*n') or content:match('4%s*%*')
+  local has_node_children = content:match('2%s*%*%s*node') or content:match('node%s*%*%s*2')
+  if has_seg_tree_size or has_node_children then
+    return 'O(log n)', 'O(n)'
+  end
+
+  -- KMP: prefix/lps array computation
+  local has_lps = content:match('lps') or content:match('prefix') or content:match('pi%s*%[')
+  local has_kmp_match = content:match('j%s*>%s*0') and content:match('j%s*=%s*')
+  if has_lps and has_kmp_match then
+    return 'O(n)', 'O(m)'
+  end
+
+  return nil, nil
 end
 
 -- Analyze space complexity from declarations (Go only)
 local function analyze_space(lines)
   local space_items = {}
 
+  local skip_until = 0
+
   for i, line in ipairs(lines) do
-    -- Skip function signatures - they don't allocate (parameters are references)
-    if line:match('^func%s+') and line:match('%(') then
-      -- skip function signatures
-    else
-      -- Go slice declarations: []T, make([]T, n)
-      if
-        line:match('[%[]%s*[%]]') -- []T slice
-        or line:match('make%s*[%[]%s*[%]]') -- make([]T, ...)
-        or line:match('map%s*[%[]') -- map[T]U or make(map[T]U)
-        or line:match('make%s*%([^)]*map') -- make(map[T]U, ...) with parentheses
-        or line:match('chan%s+') -- chan T
-        or line:match('make%s*%*chan') -- make(chan T, ...)
-        or line:match('buffered%s+chan')
-      then
-        local size = line:match('%[%s*(%w+)%s*%]') or line:match('%((%w+)%)')
+    if i < skip_until then
+      goto continue
+    end
 
-        local go_size = line:match('make%s*%[%s*[^,]+%s*,%s*(%w+)%s*%]')
-          or line:match('make%s*map%[%s*[^,]+%s*,%s*[^%]]*%s*,%s*(%w+)%s*%)')
-          or line:match('make%s*%*chan%s*%[,%s*(%w+)%s*%)')
+    -- Skip function signatures (including multi-line) - parameters are references
+    if line:match('^func%s+') then
+      local j = i
+      while j <= #lines and not lines[j]:match('{') do
+        j = j + 1
+      end
+      skip_until = j + 1
+      goto continue
+    end
 
-        if size and size:match('^%d+$') then
+    -- Skip slice/map literals (not allocations): []int{1, 2, 3}
+    if line:match('%[%s*%]%s*{') then
+      goto continue
+    end
+
+    -- Detect actual space-allocating declarations
+    if
+      line:match('make%s*%[%s*') -- make([]T, ...)
+      or line:match('make%s*%(map') -- make(map[T]U, ...)
+      or line:match('make%s*%(chan') -- make(chan T, ...)
+    then
+      local go_size = line:match('make%s*%[%s*[^,]+%s*,%s*(%w+)%s*%]')
+        or line:match('make%s*%(chan%s+[^,]+%s*,%s*(%w+)%s*%)')
+
+      if go_size and go_size:match('^%d+$') then
+        table.insert(space_items, { line = i, complexity = 'O(1)' })
+      elseif go_size then
+        table.insert(space_items, { line = i, complexity = 'O(n)' })
+      elseif line:match('make%s*%[%s*') then
+        local make_size = line:match('make%s*%[%s*[^,]+%s*,%s*([^%)]+)')
+        if make_size and make_size:match('^%d+$') then
           table.insert(space_items, { line = i, complexity = 'O(1)' })
-        elseif go_size and go_size:match('^%d+$') then
+        else
+          table.insert(space_items, { line = i, complexity = 'O(n)' })
+        end
+      elseif line:match('make%s*%(chan') then
+        local chan_size = line:match('make%s*%(chan%s+[^,]+%s*,%s*([^%)]+)')
+        if chan_size and chan_size:match('^%d+$') then
           table.insert(space_items, { line = i, complexity = 'O(1)' })
-        elseif size or go_size then
+        elseif chan_size then
           table.insert(space_items, { line = i, complexity = 'O(n)' })
         else
-          if line:match('%[%s*%]') then
-            table.insert(space_items, { line = i, complexity = 'O(n)' })
-          elseif line:match('map%s*%[') then
-            table.insert(space_items, { line = i, complexity = 'O(n)' })
-          elseif line:match('chan%s+') then
-            table.insert(space_items, { line = i, complexity = 'O(1)' })
-          elseif line:match('make%s*%*chan') then
-            table.insert(space_items, { line = i, complexity = 'O(n)' })
-          elseif line:match('var%s+%w+%s+map') then
-            table.insert(space_items, { line = i, complexity = 'O(1)' })
-          else
-            table.insert(space_items, { line = i, complexity = 'O(n)' })
-          end
+          table.insert(space_items, { line = i, complexity = 'O(1)' })
         end
+      elseif line:match('make%s*%(map') then
+        table.insert(space_items, { line = i, complexity = 'O(n)' })
       end
     end
 
-    -- 2D slices
-    if line:match('[%[]%s*[%]]%s*[%[]%s*[%]]') then
+    -- 2D slices (only make() calls, not literals)
+    if line:match('make%s*%(%[%]%[%]') then
       table.insert(space_items, { line = i, complexity = 'O(n²)' })
     end
 
-    -- slice of maps
-    if line:match('[%[]%s*[%]]%s*map%s*%[') then
+    -- slice of maps (only make() calls)
+    if line:match('make%s*%(%[%]%[%].*map') then
       table.insert(space_items, { line = i, complexity = 'O(n²)' })
     end
+
+    ::continue::
   end
 
   local max_space = 'O(1)'
@@ -913,21 +956,30 @@ function M.analyze(bufnr)
         -- Check if this is a divide-and-conquer algorithm
         local dc_time, dc_space = detect_divide_conquer(lines, i, func_name)
 
+        -- Check for content-based algorithm patterns
+        local algo_time, algo_space = detect_algorithm_by_content(lines, i, func_name)
+
         -- Start tracking new function
         current_function = {
           name = func_name,
           line = i,
-          time_complexity = dc_time or 'O(1)',
-          space_complexity = dc_space or 'O(1)',
+          time_complexity = dc_time or algo_time or 'O(1)',
+          space_complexity = dc_space or algo_space or 'O(1)',
           start_depth = brace_depth + open_braces,
           is_divide_conquer = dc_time ~= nil,
+          is_algorithm = algo_time ~= nil,
         }
         table.insert(function_stack, current_function)
 
-        -- Update overall time complexity if divide-and-conquer
+        -- Update overall time complexity if divide-and-conquer or algorithm detected
         if dc_time then
           results.overall_time = get_dominant_complexity(results.overall_time, dc_time)
           results.space = get_dominant_complexity(results.space, dc_space)
+        elseif algo_time then
+          results.overall_time = get_dominant_complexity(results.overall_time, algo_time)
+          if algo_space then
+            results.space = get_dominant_complexity(results.space, algo_space)
+          end
         end
       end
     end
@@ -946,6 +998,10 @@ function M.analyze(bufnr)
       elseif trimmed:match(CONTROL_PATTERNS.RANGE_FOR) then
         loop_type = 'range_for'
         base_complexity = analyze_go_for_loop(trimmed, lines, i)
+        -- Go infinite loop: for {
+      elseif trimmed:match('^for%s*{$') then
+        loop_type = 'infinite_for'
+        base_complexity = 'O(n)'
         -- Go while-style for loop: for condition {
       elseif trimmed:match(CONTROL_PATTERNS.FOR_COND) then
         loop_type = 'for_cond'
@@ -955,8 +1011,8 @@ function M.analyze(bufnr)
       if loop_type then
         -- Calculate effective complexity with nesting
         local effective = base_complexity
-        for _, parent_complexity in ipairs(nesting_stack) do
-          effective = multiply_complexity(parent_complexity, effective)
+        for _, entry in ipairs(nesting_stack) do
+          effective = multiply_complexity(entry.complexity, effective)
         end
 
         table.insert(results.loops, {
@@ -966,23 +1022,21 @@ function M.analyze(bufnr)
           nesting_level = #nesting_stack,
         })
 
-        -- Push to stack
-        table.insert(nesting_stack, base_complexity)
+        -- Push to stack with depth tracking
+        table.insert(nesting_stack, {
+          complexity = base_complexity,
+          depth = brace_depth + open_braces,
+        })
 
         -- Update overall time complexity - compare and take dominant
-        -- Skip for divide-and-conquer functions as they have their own complexity
-        if effective ~= 'O(1)' and not (current_function and current_function.is_divide_conquer) then
+        -- Skip for divide-and-conquer or algorithm functions as they have their own complexity
+        if effective ~= 'O(1)' and not (current_function and (current_function.is_divide_conquer or current_function.is_algorithm)) then
           results.overall_time = get_dominant_complexity(results.overall_time, effective)
           -- Update current function complexity
-          if current_function and not current_function.is_divide_conquer then
+          if current_function and not current_function.is_divide_conquer and not current_function.is_algorithm then
             current_function.time_complexity = get_dominant_complexity(current_function.time_complexity, effective)
           end
         end
-      end
-
-      -- Detect closing braces to pop nesting
-      if trimmed:match('^}') and #nesting_stack > 0 then
-        table.remove(nesting_stack)
       end
 
       -- Detect function calls
@@ -993,8 +1047,8 @@ function M.analyze(bufnr)
         local effective_call_complexity = call_base_complexity
 
         -- If we're inside loops, multiply the function call complexity
-        for _, parent_complexity in ipairs(nesting_stack) do
-          effective_call_complexity = multiply_complexity(parent_complexity, effective_call_complexity)
+        for _, entry in ipairs(nesting_stack) do
+          effective_call_complexity = multiply_complexity(entry.complexity, effective_call_complexity)
         end
 
         table.insert(results.function_calls, {
@@ -1019,6 +1073,11 @@ function M.analyze(bufnr)
     -- Update brace depth
     brace_depth = brace_depth + open_braces - close_braces
 
+    -- Pop loops when exiting their scope (brace-aware)
+    while #nesting_stack > 0 and nesting_stack[#nesting_stack].depth > brace_depth do
+      table.remove(nesting_stack)
+    end
+
     -- Check if we're exiting a function
     if current_function and brace_depth < current_function.start_depth then
       -- Function ended, save it to results
@@ -1030,8 +1089,6 @@ function M.analyze(bufnr)
       })
       table.remove(function_stack)
       current_function = function_stack[#function_stack]
-      -- Clear nesting stack when exiting a function
-      nesting_stack = {}
     end
   end
 

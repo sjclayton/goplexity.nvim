@@ -71,9 +71,9 @@ local function complexity_to_ops(complexity_str, n)
   if not ops then return nil end
   
   -- Scale by n for complexity factors
-  if complexity_str:match("n²") or complexity_str:match("n\\^2") then
+  if complexity_str:match("n²") then
     ops = ops * n * n
-  elseif complexity_str:match("n³") or complexity_str:match("n\\^3") then
+  elseif complexity_str:match("n³") then
     ops = ops * n * n * n
   elseif complexity_str:match("n log n") or complexity_str:match("n log") then
     ops = ops * n * 10

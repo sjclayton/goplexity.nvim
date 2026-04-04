@@ -17,29 +17,21 @@ function M.setup(user_config)
 end
 
 -- Run complexity analysis and display results
-local function run_complexity_analysis(bufnr)
+local function run_analysis(bufnr)
   bufnr = bufnr or vim.api.nvim_get_current_buf()
 
-  -- Check if buffer is a supported filetype
   local filetype = vim.api.nvim_buf_get_option(bufnr, 'filetype')
   if filetype ~= 'go' then
     vim.notify('Goplexity: Only Go files are supported', vim.log.levels.WARN)
-    return
+    return nil
   end
 
-  -- Run analysis
   local results = analyzer.analyze(bufnr)
-
-  -- Store results
   M.last_analysis[bufnr] = results
-
-  -- Display results
   display.display(bufnr, results)
 
-  -- Show summary
   local summary = string.format('Time: %s | Space: %s | %d loops', results.overall_time, results.space, #results.loops)
 
-  -- Check for constraint warnings
   local constraints = config.get_constraints()
   if constraints.n then
     local time_warnings = config.should_warn(results.overall_time, results.space)
@@ -53,27 +45,8 @@ local function run_complexity_analysis(bufnr)
   else
     vim.notify('Goplexity: ' .. summary, vim.log.levels.INFO)
   end
-end
 
--- Hide complexity hints
-local function hide_complexity(bufnr)
-  bufnr = bufnr or vim.api.nvim_get_current_buf()
-  display.hide(bufnr)
-  vim.notify('Goplexity: Complexity hints hidden', vim.log.levels.INFO)
-end
-
--- Toggle complexity visibility
-local function toggle_complexity(bufnr)
-  bufnr = bufnr or vim.api.nvim_get_current_buf()
-  local visible = display.toggle(bufnr)
-
-  if visible and M.last_analysis[bufnr] then
-    -- Re-display last analysis
-    display.display(bufnr, M.last_analysis[bufnr])
-    vim.notify('Goplexity: Complexity hints shown', vim.log.levels.INFO)
-  else
-    vim.notify('Goplexity: Complexity hints hidden', vim.log.levels.INFO)
-  end
+  return results
 end
 
 -- Set problem constraints
@@ -105,21 +78,30 @@ local function set_constraints(args)
   vim.notify(msg, vim.log.levels.INFO)
 end
 
+-- Toggle complexity visibility (returns true if shown, false if hidden)
+function M.toggle(bufnr)
+  bufnr = bufnr or vim.api.nvim_get_current_buf()
+  local visible = display.toggle(bufnr)
+
+  if visible then
+    -- Re-run analysis and display
+    run_analysis(bufnr)
+  end
+
+  return visible
+end
+
 -- Main command handler
 function M.command(args)
   if #args == 0 then
-    vim.notify('Goplexity: Usage: :Goplexity <complexity|hide|toggle|constraints>', vim.log.levels.ERROR)
+    M.toggle()
     return
   end
 
   local cmd = args[1]:lower()
 
-  if cmd == 'complexity' then
-    run_complexity_analysis()
-  elseif cmd == 'hide' then
-    hide_complexity()
-  elseif cmd == 'toggle' then
-    toggle_complexity()
+  if cmd == 'toggle' then
+    M.toggle()
   elseif cmd == 'constraints' then
     local constraint_args = {}
     for i = 2, #args do

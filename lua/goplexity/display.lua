@@ -80,12 +80,7 @@ local function is_comment_or_empty(trimmed)
   return trimmed == '' or trimmed:match('^//') or trimmed:match('^/%*')
 end
 
--- Check if line is an include directive
-local function is_include_line(trimmed)
-  return trimmed:match('^#%s*include') ~= nil
-end
-
--- Check if line is a header-like pattern (define, using, main, etc.)
+-- Check if line is a header-like pattern (package, import, func, type, etc.)
 local function is_header_pattern(trimmed)
   local patterns = {
     '^package%s+',
@@ -107,19 +102,13 @@ end
 -- Find the best line to display overall complexity
 local function find_display_line(lines)
   local target_line = 0
-  local found_include = false
 
   for i, line in ipairs(lines) do
     local trimmed = line:match('^%s*(.-)%s*$')
 
     if not is_comment_or_empty(trimmed) then
-      -- Prioritize #include directives
-      if is_include_line(trimmed) then
-        return i - 1
-      end
-
-      -- Check for other header patterns
-      if not found_include and is_header_pattern(trimmed) then
+      -- Check for header patterns (package, import, func, type)
+      if is_header_pattern(trimmed) then
         target_line = i - 1
         break
       end
@@ -183,7 +172,7 @@ function M.display(bufnr, analysis_results)
   end
 end
 
--- Toggle visibility
+-- Toggle visibility (returns true if shown, false if hidden)
 function M.toggle(bufnr)
   bufnr = bufnr or vim.api.nvim_get_current_buf()
   M.visible = not M.visible
@@ -193,17 +182,6 @@ function M.toggle(bufnr)
   end
 
   return M.visible
-end
-
--- Hide (set visibility to false and clear)
-function M.hide(bufnr)
-  M.visible = false
-  M.clear(bufnr)
-end
-
--- Show (set visibility to true, but don't re-run analysis)
-function M.show()
-  M.visible = true
 end
 
 return M
