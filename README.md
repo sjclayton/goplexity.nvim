@@ -69,7 +69,6 @@ Complexity analyzer for Golang
 
 ```vim
 :Goplexity              " Toggle complexity hints (analyze + show/hide)
-:Goplexity toggle       " Toggle complexity hints
 :Goplexity constraints 100000 2000 256  " Set problem constraints (n, time_ms, memory_mb)
 ```
 

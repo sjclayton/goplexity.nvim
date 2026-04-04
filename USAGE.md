@@ -6,7 +6,6 @@
 
 ```vim
 :Goplexity              " Toggle hints (analyze + show/hide)
-:Goplexity toggle       " Same as above
 ```
 
 Running `:Goplexity` with no arguments toggles complexity hints on and off. Each time hints are shown, the current buffer is re-analyzed so results are always fresh. Returns `true` if hints are now visible, `false` if hidden.
@@ -84,25 +83,25 @@ local visible = goplexity.toggle()
 
 ### Time Complexity
 
-| Pattern                     | Complexity     |
-| --------------------------- | -------------- |
-| `for i := 0; i < n; i++`    | O(n)           |
-| `for _, v := range slice`   | O(n)           |
-| `for condition { }`         | O(n)           |
-| `for { }`                   | O(n)           |
-| `for i := 0; i < 10; i++`   | O(1)           |
-| `for i := 0; i < n; i *= 2` | O(log n)       |
-| `for i := 0; i < n; i /= 2` | O(log n)       |
-| `for i := 0; i < n; i <<= 1`| O(log n)       |
-| `for i := 0; i < n; i >>= 1`| O(log n)       |
-| `for i := 0; i < n; i += i` | O(log n)       |
-| `for i := 0; i*i < n; i++`  | O(√n)          |
-| Nested: `for { for { } }`   | O(n²)          |
-| Nested: `for { for { for { } } }` | O(n³)    |
-| `sort.Slice(...)`           | O(n log n)     |
-| `sort.Search(...)`          | O(log n)       |
-| `append(...)`               | O(1) amortized |
-| `copy(...)`                 | O(n)           |
+| Pattern                           | Complexity     |
+| --------------------------------- | -------------- |
+| `for i := 0; i < n; i++`          | O(n)           |
+| `for _, v := range slice`         | O(n)           |
+| `for condition { }`               | O(n)           |
+| `for { }`                         | O(n)           |
+| `for i := 0; i < 10; i++`         | O(1)           |
+| `for i := 0; i < n; i *= 2`       | O(log n)       |
+| `for i := 0; i < n; i /= 2`       | O(log n)       |
+| `for i := 0; i < n; i <<= 1`      | O(log n)       |
+| `for i := 0; i < n; i >>= 1`      | O(log n)       |
+| `for i := 0; i < n; i += i`       | O(log n)       |
+| `for i := 0; i*i < n; i++`        | O(√n)          |
+| Nested: `for { for { } }`         | O(n²)          |
+| Nested: `for { for { for { } } }` | O(n³)          |
+| `sort.Slice(...)`                 | O(n log n)     |
+| `sort.Search(...)`                | O(log n)       |
+| `append(...)`                     | O(1) amortized |
+| `copy(...)`                       | O(n)           |
 
 ### Space Complexity
 
@@ -145,7 +144,7 @@ func solve(n int) {
 
 After running `:Goplexity`, you'll see virtual text annotations like:
 
-```
+```go
 package main                    // 🧠 Time: O(n²) | Space: O(n)
 
 func solve(n int) {             // 🧠 Time: O(n²) | Space: O(n)
@@ -186,5 +185,3 @@ for i := 0; i*i < n; i++ { // 🧠 T:O(√n) S:O(1)
 ## Tips
 
 1. **Constraints**: Set problem limits with `:Goplexity constraints` for TLE/MLE warnings
-2. **Toggle**: Use `:Goplexity toggle` to hide or re-analyze hints
-3. **External detection**: Other plugins can call `goplexity.toggle()` and check the return value

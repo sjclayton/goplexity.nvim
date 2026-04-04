@@ -6,13 +6,12 @@ if vim.g.loaded_goplexity == 1 then
 end
 vim.g.loaded_goplexity = 1
 
--- Define user commands
 vim.api.nvim_create_user_command("Goplexity", function(opts)
 	require("goplexity").command(opts.fargs)
 end, {
 	nargs = "*",
 	complete = function()
-		return { "toggle", "constraints" }
+		return { "constraints" }
 	end,
 	desc = "Goplexity complexity visualizer commands",
 })

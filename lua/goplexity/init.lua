@@ -99,9 +99,7 @@ function M.command(args)
 
   local cmd = args[1]:lower()
 
-  if cmd == 'toggle' then
-    M.toggle()
-  elseif cmd == 'constraints' then
+  if cmd == 'constraints' then
     local constraint_args = {}
     for i = 2, #args do
       table.insert(constraint_args, args[i])
