@@ -9,9 +9,9 @@ local CONSTANTS = {
 
 -- Pattern matchers for control structures
 local CONTROL_PATTERNS = {
-   FOR_TRADITIONAL = '^for%s+[%w_]', -- Go traditional: for i := 0; ... or for i = 0; ...
-   RANGE_FOR = '^for%s+[%w_].*:?=%s*[^=].*range', -- for i, v := range slice
-   FOR_COND = '^for%s+[^;{]', -- Go while-style: for condition { or for condition
+  FOR_TRADITIONAL = '^for%s+[%w_]', -- Go traditional: for i := 0; ... or for i = 0; ...
+  RANGE_FOR = '^for%s+[%w_].*:?=%s*[^=].*range', -- for i, v := range slice
+  FOR_COND = '^for%s+[^;{]', -- Go while-style: for condition { or for condition
 }
 
 -- Complexity hierarchy (from lowest to highest)
@@ -180,8 +180,10 @@ local function detect_divide_conquer(lines, start_line, func_name)
     and has_recursive_call
 
   -- Generic divide-and-conquer: requires name suggesting D&C + recursive calls + split pattern
-  local has_dc_name = func_name:match('sort') or func_name:match('merge')
-    or func_name:match('split') or func_name:match('divide')
+  local has_dc_name = func_name:match('sort')
+    or func_name:match('merge')
+    or func_name:match('split')
+    or func_name:match('divide')
   if is_merge_sort then
     return 'O(n log n)', 'O(n)' -- time, space
   elseif is_quick_sort then
@@ -196,8 +198,7 @@ end
 
 -- Check if a line contains a logarithmic increment pattern
 local function is_log_increment(line)
-  return
-    line:match('[%w_]+%s*%*=%s*2') -- i *= 2
+  return line:match('[%w_]+%s*%*=%s*2') -- i *= 2
     or line:match('[%w_]+%s*/=%s*2') -- i /= 2
     or line:match('[%w_]+%s*<<=') -- i <<= 1
     or line:match('[%w_]+%s*>>=') -- i >>= 1
@@ -218,8 +219,12 @@ local function scan_body_for_log_increment(lines, start_line)
   for i = start_line, math.min(start_line + 10, #lines) do
     local line = lines[i]
     for c in line:gmatch('.') do
-      if c == '{' then brace_count = brace_count + 1 end
-      if c == '}' then brace_count = brace_count - 1 end
+      if c == '{' then
+        brace_count = brace_count + 1
+      end
+      if c == '}' then
+        brace_count = brace_count - 1
+      end
     end
     if is_log_increment(line) or is_self_double(line) then
       return true
@@ -393,7 +398,12 @@ local function analyze_function_call(line)
     return { time = 'O(n)' }
   end
 
-  if line:match('regexp%.Match%s*%(') or line:match('Regexp%.Match%s*%(') or line:match('Regexp%.Find%s*%(') or line:match('Regexp%.FindAll%s*%(') then
+  if
+    line:match('regexp%.Match%s*%(')
+    or line:match('Regexp%.Match%s*%(')
+    or line:match('Regexp%.Find%s*%(')
+    or line:match('Regexp%.FindAll%s*%(')
+  then
     return { time = 'O(n)' }
   end
 
@@ -523,7 +533,16 @@ local function analyze_function_call(line)
     return { time = 'O(1)' }
   end
 
-  if line:match('big%.Int%.Add%s*%(') or line:match('big%.Int%.Mul%s*%(') or line:match('big%.Int%.Div%s*%(') or line:match('big%.Int%.Sub%s*%(') or line:match('%.Add%s*%(') and line:match('big%.Int') or line:match('%.Mul%s*%(') and line:match('big%.Int') or line:match('%.Div%s*%(') and line:match('big%.Int') or line:match('%.Sub%s*%(') and line:match('big%.Int') then
+  if
+    line:match('big%.Int%.Add%s*%(')
+    or line:match('big%.Int%.Mul%s*%(')
+    or line:match('big%.Int%.Div%s*%(')
+    or line:match('big%.Int%.Sub%s*%(')
+    or line:match('%.Add%s*%(') and line:match('big%.Int')
+    or line:match('%.Mul%s*%(') and line:match('big%.Int')
+    or line:match('%.Div%s*%(') and line:match('big%.Int')
+    or line:match('%.Sub%s*%(') and line:match('big%.Int')
+  then
     return { time = 'O(n)' }
   end
 
@@ -541,7 +560,12 @@ local function analyze_function_call(line)
     return { time = 'O(n)' }
   end
 
-  if line:match('heap%.Push%s*%(') or line:match('heap%.Pop%s*%(') or line:match('heap%.Fix%s*%(') or line:match('heap%.Remove%s*%(') then
+  if
+    line:match('heap%.Push%s*%(')
+    or line:match('heap%.Pop%s*%(')
+    or line:match('heap%.Fix%s*%(')
+    or line:match('heap%.Remove%s*%(')
+  then
     return { time = 'O(log n)' }
   end
 
@@ -560,7 +584,11 @@ local function analyze_function_call(line)
   end
 
   -- slices package
-  if line:match('slices%.Sort%s*%(') or line:match('slices%.SortFunc%s*%(') or line:match('slices%.SortStableFunc%s*%(') then
+  if
+    line:match('slices%.Sort%s*%(')
+    or line:match('slices%.SortFunc%s*%(')
+    or line:match('slices%.SortStableFunc%s*%(')
+  then
     return { time = 'O(n log n)' }
   end
 
@@ -583,12 +611,24 @@ local function analyze_function_call(line)
   end
 
   -- maps package
-  if line:match('maps%.Keys%s*%(') or line:match('maps%.Values%s*%(') or line:match('maps%.Equal%s*%(') or line:match('maps%.Clone%s*%(') or line:match('maps%.Copy%s*%(') then
+  if
+    line:match('maps%.Keys%s*%(')
+    or line:match('maps%.Values%s*%(')
+    or line:match('maps%.Equal%s*%(')
+    or line:match('maps%.Clone%s*%(')
+    or line:match('maps%.Copy%s*%(')
+  then
     return { time = 'O(n)' }
   end
 
   -- fmt package - printing operations
-  if line:match('fmt%.Print%s*%(') or line:match('fmt%.Printf%s*%(') or line:match('fmt%.Println%s*%(') or line:match('fmt%.Sprint%s*%(') or line:match('fmt%.Errorf%s*%(') then
+  if
+    line:match('fmt%.Print%s*%(')
+    or line:match('fmt%.Printf%s*%(')
+    or line:match('fmt%.Println%s*%(')
+    or line:match('fmt%.Sprint%s*%(')
+    or line:match('fmt%.Errorf%s*%(')
+  then
     return { time = 'O(n)' }
   end
 
@@ -695,7 +735,8 @@ local function detect_algorithm_by_content(lines, start_line, func_name)
 
   -- Prim: visited set + min-weight/key selection (no queue or heap)
   -- Must check BEFORE generic graph traversal to avoid false positive
-  local has_min_weight = (content:match('min') or content:match('Min')) and (content:match('weight') or content:match('cost') or content:match('key'))
+  local has_min_weight = (content:match('min') or content:match('Min'))
+    and (content:match('weight') or content:match('cost') or content:match('key'))
   if has_adjacency and has_visited and has_min_weight and not has_queue_ops and not content:match('heap') then
     return 'O(V²)', 'O(V)'
   end
@@ -788,8 +829,18 @@ local function detect_algorithm_by_content(lines, start_line, func_name)
   end
 
   -- Trie: children map/array + character traversal
-  local has_trie_children = content:match('children') and (content:match('map') or content:match('%[26%]') or content:match('%[256%]') or content:match('rune') or content:match('byte'))
-  local has_char_traversal = content:match('%-%s*%\'a\'') or content:match('%-%s*%\'0\'') or content:match('for .- := range') or content:match('for .-, .- := range')
+  local has_trie_children = content:match('children')
+    and (
+      content:match('map')
+      or content:match('%[26%]')
+      or content:match('%[256%]')
+      or content:match('rune')
+      or content:match('byte')
+    )
+  local has_char_traversal = content:match("%-%s*%'a'")
+    or content:match("%-%s*%'0'")
+    or content:match('for .- := range')
+    or content:match('for .-, .- := range')
   if has_trie_children and has_char_traversal then
     return 'O(L)', 'O(L * Σ)'
   end
@@ -1030,7 +1081,10 @@ function M.analyze(bufnr)
           depth = brace_depth + open_braces,
         })
 
-        if effective ~= 'O(1)' and not (current_function and (current_function.is_divide_conquer or current_function.is_algorithm)) then
+        if
+          effective ~= 'O(1)'
+          and not (current_function and (current_function.is_divide_conquer or current_function.is_algorithm))
+        then
           results.overall_time = get_dominant_complexity(results.overall_time, effective)
           if current_function and not current_function.is_divide_conquer and not current_function.is_algorithm then
             current_function.time_complexity = get_dominant_complexity(current_function.time_complexity, effective)

@@ -17,17 +17,25 @@ local test_results = {}
 -- Extract complexity value from a comment line
 local function extract_complexity(line, prefix)
   local idx = line:find(prefix, 1, true)
-  if not idx then return nil end
+  if not idx then
+    return nil
+  end
   local rest = line:sub(idx + #prefix):match('^%s*(.*)')
-  if not rest then return nil end
+  if not rest then
+    return nil
+  end
 
   local start_idx = rest:find('O%(')
-  if not start_idx then return nil end
+  if not start_idx then
+    return nil
+  end
 
   local depth = 0
   for i = start_idx, #rest do
     local c = rest:sub(i, i)
-    if c == '(' then depth = depth + 1 end
+    if c == '(' then
+      depth = depth + 1
+    end
     if c == ')' then
       depth = depth - 1
       if depth == 0 then
@@ -49,14 +57,17 @@ local function parse_expected(lines)
   for _, line in ipairs(lines) do
     local time_val = extract_complexity(line, 'Expected Time Complexity:')
     local space_val = extract_complexity(line, 'Expected Space Complexity:')
-    if time_val then expected.time = time_val end
-    if space_val then expected.space = space_val end
+    if time_val then
+      expected.time = time_val
+    end
+    if space_val then
+      expected.space = space_val
+    end
   end
 
   local file_level_time = expected.time
   for i, line in ipairs(lines) do
-    local func_name = line:match('^func%s+%([^)]+%)%s+([%w_]+)%s*%(')
-      or line:match('^func%s+([%w_]+)%s*%(')
+    local func_name = line:match('^func%s+%([^)]+%)%s+([%w_]+)%s*%(') or line:match('^func%s+([%w_]+)%s*%(')
 
     if func_name and func_name ~= 'main' then
       local func_time = nil
@@ -87,7 +98,9 @@ end
 
 -- Normalize complexity string for comparison
 local function normalize_complexity(c)
-  if not c then return nil end
+  if not c then
+    return nil
+  end
   c = c:gsub('%s+', ' ')
   c = c:gsub('^%s+', '')
   c = c:gsub('%s+$', '')
@@ -96,31 +109,53 @@ end
 
 -- Check if two complexity strings are equivalent
 local function complexity_matches(actual, expected)
-  if not expected then return true end
-  if not actual then return false end
+  if not expected then
+    return true
+  end
+  if not actual then
+    return false
+  end
 
   local a = normalize_complexity(actual)
   local e = normalize_complexity(expected)
 
-  if a == e then return true end
-  if e:match('O%(n%)') and a == 'O(n)' then return true end
-  if e:match('O%(1%)') and a == 'O(1)' then return true end
+  if a == e then
+    return true
+  end
+  if e:match('O%(n%)') and a == 'O(n)' then
+    return true
+  end
+  if e:match('O%(1%)') and a == 'O(1)' then
+    return true
+  end
 
   return false
 end
 
 -- Check if actual space is not worse than expected
 local function space_acceptable(actual, expected)
-  if not expected then return true end
-  if not actual then return false end
+  if not expected then
+    return true
+  end
+  if not actual then
+    return false
+  end
 
   local a = normalize_complexity(actual)
   local e = normalize_complexity(expected)
 
-  if a == e then return true end
-  if e:match('^O%(n%)') and a == 'O(1)' then return true end
-  if e:match('O%(n') and a == 'O(n)' then return true end
-  if e:match('O%(n%)') and e:match('O%(1%)') then return true end
+  if a == e then
+    return true
+  end
+  if e:match('^O%(n%)') and a == 'O(1)' then
+    return true
+  end
+  if e:match('O%(n') and a == 'O(n)' then
+    return true
+  end
+  if e:match('O%(n%)') and e:match('O%(1%)') then
+    return true
+  end
 
   return false
 end
@@ -129,7 +164,9 @@ end
 local function create_buffer(filepath)
   local lines = {}
   local f = io.open(filepath, 'r')
-  if not f then return nil end
+  if not f then
+    return nil
+  end
   for line in f:lines() do
     table.insert(lines, line)
   end
@@ -161,19 +198,13 @@ local function run_test(name, filepath)
 
   if expected.time then
     if not complexity_matches(results.overall_time, expected.time) then
-      table.insert(issues, string.format(
-        'Time: expected %s, got %s',
-        expected.time, results.overall_time
-      ))
+      table.insert(issues, string.format('Time: expected %s, got %s', expected.time, results.overall_time))
     end
   end
 
   if expected.space then
     if not space_acceptable(results.space, expected.space) then
-      table.insert(issues, string.format(
-        'Space: expected %s, got %s',
-        expected.space, results.space
-      ))
+      table.insert(issues, string.format('Space: expected %s, got %s', expected.space, results.space))
     end
   end
 
@@ -185,19 +216,21 @@ local function run_test(name, filepath)
         if act_func.name == exp_func.name then
           found = true
           if exp_func.time and not complexity_matches(act_func.time_complexity, exp_func.time) then
-            table.insert(issues, string.format(
-              'Function %s time: expected %s, got %s',
-              exp_func.name, exp_func.time, act_func.time_complexity
-            ))
+            table.insert(
+              issues,
+              string.format(
+                'Function %s time: expected %s, got %s',
+                exp_func.name,
+                exp_func.time,
+                act_func.time_complexity
+              )
+            )
           end
           break
         end
       end
       if not found then
-        table.insert(issues, string.format(
-          'Function %s: not detected in analysis',
-          exp_func.name
-        ))
+        table.insert(issues, string.format('Function %s: not detected in analysis', exp_func.name))
       end
     end
   end
@@ -205,8 +238,13 @@ local function run_test(name, filepath)
   local status, message
   if #issues == 0 then
     status = 'PASS'
-    message = string.format('Time: %s | Space: %s | Loops: %d | Functions: %d',
-      results.overall_time, results.space, #results.loops, #results.functions)
+    message = string.format(
+      'Time: %s | Space: %s | Loops: %d | Functions: %d',
+      results.overall_time,
+      results.space,
+      #results.loops,
+      #results.functions
+    )
     passed = passed + 1
   else
     status = 'FAIL'
@@ -300,8 +338,8 @@ function M.run()
   }
 
   -- Print header
-  local header = string.format('%-25s %-6s %-16s %-14s %-7s %-11s',
-    'Test', 'Status', 'Time', 'Space', 'Loops', 'Functions')
+  local header =
+    string.format('%-25s %-6s %-16s %-14s %-7s %-11s', 'Test', 'Status', 'Time', 'Space', 'Loops', 'Functions')
   print(header)
   print(string.rep('-', #header))
 
@@ -333,8 +371,17 @@ function M.run()
       funcs_str = '—'
     end
 
-    print(string.format('%-25s %-6s %-16s %-14s %-7s %-11s',
-      result.name, status_str, time_str, space_str, loops_str, funcs_str))
+    print(
+      string.format(
+        '%-25s %-6s %-16s %-14s %-7s %-11s',
+        result.name,
+        status_str,
+        time_str,
+        space_str,
+        loops_str,
+        funcs_str
+      )
+    )
   end
 
   print(string.rep('-', #header))

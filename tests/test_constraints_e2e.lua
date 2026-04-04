@@ -42,7 +42,7 @@ function M.run()
   -- Step 1: Verify command handler parses and stores args
   print('\n--- Step 1: Command parsing ---')
   reset()
-  goplexity.command({'constraints', '100000', '2000', '256'})
+  goplexity.command({ 'constraints', '100000', '2000', '256' })
   local c = config.get_constraints()
   assert_eq('n parsed as number', type(c.n), 'number')
   assert_eq('n value', c.n, 100000)
@@ -57,7 +57,7 @@ function M.run()
   -- Step 2: Verify partial args
   print('\n--- Step 2: Partial args ---')
   reset()
-  goplexity.command({'constraints', '50000'})
+  goplexity.command({ 'constraints', '50000' })
   c = config.get_constraints()
   assert_eq('n only', c.n, 50000)
   assert_eq('time default nil', c.time_limit_ms, nil)
@@ -66,7 +66,9 @@ function M.run()
   -- Step 3: Verify invalid args produce nil, not crash
   print('\n--- Step 3: Invalid input handling ---')
   reset()
-  local ok = pcall(function() goplexity.command({'constraints', 'notanumber'}) end)
+  local ok = pcall(function()
+    goplexity.command({ 'constraints', 'notanumber' })
+  end)
   assert_eq('invalid arg does not crash', ok, true)
   c = config.get_constraints()
   assert_eq('invalid n is nil', c.n, nil)
@@ -74,13 +76,17 @@ function M.run()
   -- Step 4: Verify no-args shows usage
   print('\n--- Step 4: No args after constraints ---')
   reset()
-  ok = pcall(function() goplexity.command({'constraints'}) end)
+  ok = pcall(function()
+    goplexity.command({ 'constraints' })
+  end)
   assert_eq('no args does not crash', ok, true)
 
   -- Step 5: Verify unknown command
   print('\n--- Step 5: Unknown command ---')
   reset()
-  ok = pcall(function() goplexity.command({'foobar'}) end)
+  ok = pcall(function()
+    goplexity.command({ 'foobar' })
+  end)
   assert_eq('unknown command does not crash', ok, true)
 
   -- Step 6: Verify should_warn logic with real complexity values
@@ -173,7 +179,9 @@ function M.run()
   -- Should have time warning (O(n) at n=100 is borderline) but no space warning
   local space_warnings = 0
   for _, w in ipairs(warnings) do
-    if w:match('Space:') then space_warnings = space_warnings + 1 end
+    if w:match('Space:') then
+      space_warnings = space_warnings + 1
+    end
   end
   assert_eq('O(n) space at n=100 with 256MB no space warning', space_warnings, 0)
 
@@ -184,7 +192,9 @@ function M.run()
   warnings = config.should_warn('O(n)', 'O(n)')
   space_warnings = 0
   for _, w in ipairs(warnings) do
-    if w:match('Space:') then space_warnings = space_warnings + 1 end
+    if w:match('Space:') then
+      space_warnings = space_warnings + 1
+    end
   end
   assert_eq('O(n) space at n=1e6 with 256MB warns', space_warnings, 1)
 
@@ -217,7 +227,7 @@ function M.run()
   -- Step 11: Verify setup() constraints work
   print('\n--- Step 11: setup() with constraints ---')
   reset()
-  goplexity.setup({constraints = {n = 50000, time_limit_ms = 500, memory_limit_mb = 128}})
+  goplexity.setup({ constraints = { n = 50000, time_limit_ms = 500, memory_limit_mb = 128 } })
   c = config.get_constraints()
   assert_eq('setup n', c.n, 50000)
   assert_eq('setup time', c.time_limit_ms, 500)
@@ -226,8 +236,8 @@ function M.run()
   -- Step 12: Verify command overrides setup
   print('\n--- Step 12: Command overrides setup ---')
   reset()
-  goplexity.setup({constraints = {n = 50000, time_limit_ms = 500, memory_limit_mb = 128}})
-  goplexity.command({'constraints', '100000', '2000', '256'})
+  goplexity.setup({ constraints = { n = 50000, time_limit_ms = 500, memory_limit_mb = 128 } })
+  goplexity.command({ 'constraints', '100000', '2000', '256' })
   c = config.get_constraints()
   assert_eq('command overrides setup n', c.n, 100000)
   assert_eq('command overrides setup time', c.time_limit_ms, 2000)
@@ -236,7 +246,7 @@ function M.run()
   -- Step 13: Verify full integration: command → analysis → warnings
   print('\n--- Step 13: Full integration (command + analysis) ---')
   reset()
-  goplexity.command({'constraints', '100', '1000', '1'})
+  goplexity.command({ 'constraints', '100', '1000', '1' })
 
   local buf = make_go_buf({
     'package main',
@@ -266,7 +276,7 @@ function M.run()
   -- Step 14: Memory constraint integration with analysis
   print('\n--- Step 14: Memory constraint integration ---')
   reset()
-  goplexity.command({'constraints', '10000', '1000000', '256'})
+  goplexity.command({ 'constraints', '10000', '1000000', '256' })
 
   local buf3 = make_go_buf({
     'package main',
@@ -283,7 +293,9 @@ function M.run()
   warnings = config.should_warn(results3.overall_time, results3.space)
   local has_space_warning = false
   for _, w in ipairs(warnings) do
-    if w:match('Space:') then has_space_warning = true end
+    if w:match('Space:') then
+      has_space_warning = true
+    end
   end
   assert_eq('O(n²) space at n=10000 with 256MB warns', has_space_warning, true)
 
@@ -318,7 +330,8 @@ function M.run()
   print('\n--- Step 16: Randomized stress testing ---')
   math.randomseed(os.time())
 
-  local complexities = {'O(1)', 'O(log n)', 'O(n)', 'O(n log n)', 'O(n²)', 'O(n³)', 'O(V+E)', 'O(E log V)', 'O(V×E)'}
+  local complexities =
+    { 'O(1)', 'O(log n)', 'O(n)', 'O(n log n)', 'O(n²)', 'O(n³)', 'O(V+E)', 'O(E log V)', 'O(V×E)' }
 
   -- Generate 50 random constraint + complexity combinations and verify no crashes
   local random_passes = 0
@@ -338,7 +351,11 @@ function M.run()
     if ok and type(result) == 'table' then
       random_passes = random_passes + 1
     else
-      assert_eq('random test ' .. i .. ' (n=' .. rn .. ' t=' .. rtime .. ' m=' .. rmem .. ' tc=' .. rtc .. ' sc=' .. rsc .. ')', ok and type(result) == 'table', true)
+      assert_eq(
+        'random test ' .. i .. ' (n=' .. rn .. ' t=' .. rtime .. ' m=' .. rmem .. ' tc=' .. rtc .. ' sc=' .. rsc .. ')',
+        ok and type(result) == 'table',
+        true
+      )
     end
   end
   assert_eq('50 random constraint combos no crash', random_passes, 50)
@@ -376,8 +393,12 @@ function M.run()
   local time_w = 0
   local space_w = 0
   for _, w in ipairs(warnings) do
-    if w:match('Time:') then time_w = time_w + 1 end
-    if w:match('Space:') then space_w = space_w + 1 end
+    if w:match('Time:') then
+      time_w = time_w + 1
+    end
+    if w:match('Space:') then
+      space_w = space_w + 1
+    end
   end
   assert_eq('O(n²) at n=500 100ms/10MB time warns', time_w, 1)
   assert_eq('O(n²) at n=500 100ms/10MB space warns', space_w, 1)
