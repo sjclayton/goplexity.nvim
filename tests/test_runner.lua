@@ -300,7 +300,7 @@ function M.run()
   }
 
   -- Print header
-  local header = string.format('%-25s %-6s %-12s %-12s %-7s %-11s',
+  local header = string.format('%-25s %-6s %-16s %-14s %-7s %-11s',
     'Test', 'Status', 'Time', 'Space', 'Loops', 'Functions')
   print(header)
   print(string.rep('-', #header))
@@ -333,7 +333,7 @@ function M.run()
       funcs_str = '—'
     end
 
-    print(string.format('%-25s %-6s %-12s %-12s %-7s %-11s',
+    print(string.format('%-25s %-6s %-16s %-14s %-7s %-11s',
       result.name, status_str, time_str, space_str, loops_str, funcs_str))
   end
 
