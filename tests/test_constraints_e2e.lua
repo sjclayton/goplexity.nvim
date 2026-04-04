@@ -142,6 +142,12 @@ function M.run()
   warnings = config.should_warn('O(V×E)', nil)
   assert_eq('O(V×E) at n=1 with 1000ms warns', #warnings, 1)
 
+  -- O(log² n): base=1e4, log²(1000)≈100, ops=1e6, max=1e8 → no warn
+  reset()
+  config.set_constraints(1000, 1000)
+  warnings = config.should_warn('O(log² n)', nil)
+  assert_eq('O(log² n) at n=1000 with 1000ms no warn', #warnings, 0)
+
   -- Step 7: Verify warning message format
   print('\n--- Step 7: Warning message content ---')
   reset()
@@ -379,7 +385,7 @@ function M.run()
   warnings = config.should_warn('O(V×E)', 'O(V×E)')
   assert_eq('O(V×E) at n=1 with 1ms/1MB warns on both', #warnings, 2)
 
-  -- O(n log n) at n=1000 with 10000ms/1024MB: base=2e7, scaled=2e11, max_ops=1e9 → warns
+  -- O(n log n) at n=1000 with 10000ms/1024MB: base=2e7, scaled=2e7*1000*log₂(1000)≈2e11, max_ops=1e9 → warns
   -- space: mb=2e5 → 200000 > 1024 → warns
   reset()
   config.set_constraints(1000, 10000, 1024)
