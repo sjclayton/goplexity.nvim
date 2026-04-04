@@ -173,4 +173,4 @@ matches expectations.
 
 ## Contributing
 
-Anyone who wishes to contribute is welcome to open an issue or submit a pull request.
+Anyone who wishes to help improve this plugin is welcome to open an issue and/or submit a pull request.
