@@ -41,10 +41,6 @@ Complexity analyzer for Golang
 -- lazy.nvim
 {
   'sjclayton/goplexity.nvim',
-  config = function()
-    require('goplexity').setup()
-  end,
-  cmd = 'Goplexity',
   ft = { 'go' },
 }
 ```
