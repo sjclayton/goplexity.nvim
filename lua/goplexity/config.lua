@@ -78,118 +78,84 @@ function M.get_constraints()
   return vim.tbl_deep_extend('force', M.config.constraints, M.user_constraints)
 end
 
--- Convert complexity string to estimated operations
-local function complexity_to_ops(complexity_str, n)
+
+-- Calculate the raw scaled units for a given complexity and n.
+-- Returns the base_ops * n-scaling factor.
+local function get_scaled_units(complexity_str, n)
   if not complexity_str or not n then
     return nil
   end
 
-  local ops = COMPLEXITY_OPS[complexity_str]
-  if not ops then
+  local base_ops = COMPLEXITY_OPS[complexity_str]
+  if not base_ops then
     return nil
   end
 
+  local units = base_ops
   -- Scale by n for complexity factors
   if complexity_str:match('n⁵') then
-    ops = ops * n * n * n * n * n
+    units = units * n * n * n * n * n
   elseif complexity_str:match('n⁴') then
-    ops = ops * n * n * n * n
+    units = units * n * n * n * n
   elseif complexity_str:match('n³') then
-    ops = ops * n * n * n
+    units = units * n * n * n
   elseif complexity_str:match('n²') then
-    ops = ops * n * n
+    units = units * n * n
   elseif complexity_str:match('n log log n') then
-    ops = ops * n * (math.log(math.log(n) / math.log(2)) / math.log(2))
+    units = units * n * (math.log(math.log(n) / math.log(2)) / math.log(2))
   elseif complexity_str:match('n√n') then
-    ops = ops * n * math.sqrt(n)
+    units = units * n * math.sqrt(n)
   elseif complexity_str:match('√n log n') then
-    ops = ops * math.sqrt(n) * (math.log(n) / math.log(2))
+    units = units * math.sqrt(n) * (math.log(n) / math.log(2))
   elseif complexity_str:match('n log n') then
-    ops = ops * n * (math.log(n) / math.log(2))
+    units = units * n * (math.log(n) / math.log(2))
   elseif complexity_str:match('log⁴ n') then
     local log2n = math.log(n) / math.log(2)
-    ops = ops * log2n * log2n * log2n * log2n
+    units = units * log2n * log2n * log2n * log2n
   elseif complexity_str:match('log³ n') then
     local log2n = math.log(n) / math.log(2)
-    ops = ops * log2n * log2n * log2n
+    units = units * log2n * log2n * log2n
   elseif complexity_str:match('log² n') then
     local log2n = math.log(n) / math.log(2)
-    ops = ops * log2n * log2n
+    units = units * log2n * log2n
   elseif complexity_str:match('√n') then
-    ops = ops * math.sqrt(n)
+    units = units * math.sqrt(n)
   elseif complexity_str:match('O%(n%)') and not complexity_str:match('O%(n²%)') then
-    ops = ops * n
-  elseif complexity_str:match('O%(V%+E%)') or complexity_str:match('O%(E log V%)') then
-    ops = ops * n
-  elseif complexity_str:match('O%(n×2') then
-    ops = ops * n * (2 ^ n)
+    units = units * n
+  elseif complexity_str:match('O%(V%+E%)') or complexity_str:match('O%(V×E%)') or complexity_str:match('O%(E log V%)') then
+    units = units * n
+  elseif complexity_str:match('O%(2%^n%)') or complexity_str:match('O%(n×2') then
+    units = units * n * (2 ^ n)
   elseif complexity_str:match('O%(n×n!%)') then
     -- Approximate n! for scaling purposes
     local factorial = 1
     for i = 2, math.min(n, 20) do
       factorial = factorial * i
     end
-    ops = ops * n * factorial
+    units = units * n * factorial
   end
 
-  return ops
+  return units
 end
 
--- Convert space complexity string to estimated MB usage
+-- Convert complexity string to estimated operations
+local function complexity_to_ops(complexity_str, n)
+  return get_scaled_units(complexity_str, n)
+end
+
+-- Convert space complexity string to estimated MB usage.
+-- We use a baseline of 8 bytes per complexity unit (typical for Go int/int64/headers).
 local function complexity_to_mb(complexity_str, n)
-  if not complexity_str or not n then
+  local scaled_units = get_scaled_units(complexity_str, n)
+  if not scaled_units then
     return nil
   end
 
-  local ops = COMPLEXITY_OPS[complexity_str]
-  if not ops then
-    return nil
-  end
-
-  -- Scale by n for space factors (same scaling as time)
-  if complexity_str:match('n⁵') then
-    ops = ops * n * n * n * n * n
-  elseif complexity_str:match('n⁴') then
-    ops = ops * n * n * n * n
-  elseif complexity_str:match('n³') then
-    ops = ops * n * n * n
-  elseif complexity_str:match('n²') then
-    ops = ops * n * n
-  elseif complexity_str:match('n log log n') then
-    ops = ops * n * (math.log(math.log(n) / math.log(2)) / math.log(2))
-  elseif complexity_str:match('n√n') then
-    ops = ops * n * math.sqrt(n)
-  elseif complexity_str:match('√n log n') then
-    ops = ops * math.sqrt(n) * (math.log(n) / math.log(2))
-  elseif complexity_str:match('n log n') then
-    ops = ops * n * (math.log(n) / math.log(2))
-  elseif complexity_str:match('log⁴ n') then
-    local log2n = math.log(n) / math.log(2)
-    ops = ops * log2n * log2n * log2n * log2n
-  elseif complexity_str:match('log³ n') then
-    local log2n = math.log(n) / math.log(2)
-    ops = ops * log2n * log2n * log2n
-  elseif complexity_str:match('log² n') then
-    local log2n = math.log(n) / math.log(2)
-    ops = ops * log2n * log2n
-  elseif complexity_str:match('√n') then
-    ops = ops * math.sqrt(n)
-  elseif complexity_str:match('O%(n%)') and not complexity_str:match('O%(n²%)') then
-    ops = ops * n
-  elseif complexity_str:match('O%(V%+E%)') or complexity_str:match('O%(E log V%)') then
-    ops = ops * n
-  elseif complexity_str:match('O%(n×2') then
-    ops = ops * n * (2 ^ n)
-  elseif complexity_str:match('O%(n×n!%)') then
-    local factorial = 1
-    for i = 2, math.min(n, 20) do
-      factorial = factorial * i
-    end
-    ops = ops * n * factorial
-  end
-
-  -- Convert ops to rough MB estimate (1 op ≈ 1 byte, so divide by 1e6 for MB)
-  return ops / 1e6
+  -- We treat 1e6 scaled units as 1 "base unit" of O(n) space (e.g. 8 bytes).
+  -- This makes n=1,000,000 for O(n) ≈ 7.6 MB.
+  -- units / 1e6 * 8 = bytes.
+  -- bytes / 1,048,576 = MB.
+  return (scaled_units / 1e6 * 8) / 1048576
 end
 
 -- Check if analysis should show warnings based on constraints

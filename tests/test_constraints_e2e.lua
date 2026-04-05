@@ -263,10 +263,10 @@ function M.run()
   end
   assert_eq('O(n) space at n=100 with 256MB no space warning', space_warnings, 0)
 
-  -- O(n) space at n=1000000 with 256MB limit
-  -- O(n) base=1e6, scaled=1e6*1e6=1e12, mb=1e6 → exceeds 256
+  -- O(n) space at n=1000000 with 1MB limit
+  -- O(n) base=1e6, scaled=1e6*1e6=1e12, mb ≈ 7.6 MB → exceeds 1
   reset()
-  config.set_constraints(1000000, 1000000, 256)
+  config.set_constraints(1000000, 1000000, 1)
   warnings = config.should_warn('O(n)', 'O(n)')
   space_warnings = 0
   for _, w in ipairs(warnings) do
@@ -274,7 +274,7 @@ function M.run()
       space_warnings = space_warnings + 1
     end
   end
-  assert_eq('O(n) space at n=1e6 with 256MB warns', space_warnings, 1)
+  assert_eq('O(n) space at n=1e6 with 1MB warns', space_warnings, 1)
 
   -- Both time and space warnings together
   reset()
@@ -451,18 +451,17 @@ function M.run()
   warnings = config.should_warn('O(n³)', 'O(n³)')
   assert_eq('O(n³) at n=1e6 with 1ms/1MB warns on both', #warnings, 2)
 
-  -- O(V×E) at n=1 with 1ms/1MB should warn (base ops 1e9 > 1e5 max_ops, and 1e9/1e6=1000MB > 1MB)
+  -- O(V×E) at n=1 with 1ms/0.001MB should warn (base ops 1e9 > 1e5 max_ops, and mb≈0.0076 > 0.001)
   reset()
-  config.set_constraints(1, 1, 1)
+  config.set_constraints(1, 1, 0.001)
   warnings = config.should_warn('O(V×E)', 'O(V×E)')
-  assert_eq('O(V×E) at n=1 with 1ms/1MB warns on both', #warnings, 2)
+  assert_eq('O(V×E) at n=1 with 1ms/0.001MB warns on both', #warnings, 2)
 
-  -- O(n log n) at n=1000 with 10000ms/1024MB: base=2e7, scaled=2e7*1000*log₂(1000)≈2e11, max_ops=1e9 → warns
-  -- space: mb=2e5 → 200000 > 1024 → warns
+  -- O(n log n) at n=1000 with 10000ms/1MB: mb ≈ 1525 → warns
   reset()
-  config.set_constraints(1000, 10000, 1024)
+  config.set_constraints(1000, 10000, 1)
   warnings = config.should_warn('O(n log n)', 'O(n log n)')
-  assert_eq('O(n log n) at n=1000 with 10s/1GB warns on both', #warnings, 2)
+  assert_eq('O(n log n) at n=1000 with 10s/1MB warns on both', #warnings, 2)
 
   -- O(n²) at n=500 with 100ms/10MB: time warns, space=2.5e8 MB > 10 → warns
   reset()
