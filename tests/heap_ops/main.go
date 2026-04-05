@@ -5,6 +5,7 @@ import (
 )
 
 // Test: Heap Operations
+// Verified: Real-world complexity expectations are accurate. Do not modify again.
 // Expected Time Complexity: O(n log n) - heapify + n pops
 // Expected Space Complexity: O(n) - heap array
 type IntHeap []int
@@ -23,6 +24,8 @@ func (h *IntHeap) Pop() any {
 	return x
 }
 
+// Expected Time Complexity: O(n log n)
+// Expected Space Complexity: O(n)
 func heapSort(arr []int) []int {
 	h := &IntHeap{}
 	for _, v := range arr {

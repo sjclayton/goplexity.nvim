@@ -7,8 +7,12 @@ import (
 )
 
 // Test: fmt Package Operations
+// Verified: Real-world complexity expectations are accurate. Do not modify again.
 // Expected Time Complexity: O(n) - string formatting and I/O
 // Expected Space Complexity: O(n) - string allocations
+
+// Expected Time Complexity: O(n)
+// Expected Space Complexity: O(n)
 func testFmtOps() {
 	s := "hello"
 

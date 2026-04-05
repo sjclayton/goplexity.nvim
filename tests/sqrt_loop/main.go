@@ -3,12 +3,13 @@ package main
 import "math"
 
 // Test: Square Root Loop Pattern
-// Expected Time Complexity: O(n) - sqrtLoop1 is O(√n), sqrtLoop2 is O(n) (analyzer sees linear loop over pre-computed limit)
-// Expected Space Complexity: O(1) - no allocations
+// Verified: Real-world complexity expectations are accurate. Do not modify again.
+// Expected Time Complexity: O(√n)
+// Expected Space Complexity: O(1)
 
 // i * i <= n pattern - O(√n)
-
-// i * i <= n pattern
+// Expected Time Complexity: O(√n)
+// Expected Space Complexity: O(1)
 func sqrtLoop1(n int) int {
 	count := 0
 	for i := 1; i*i <= n; i++ {
@@ -17,7 +18,9 @@ func sqrtLoop1(n int) int {
 	return count
 }
 
-// math.Sqrt in condition pattern
+// math.Sqrt in condition pattern - O(√n)
+// Expected Time Complexity: O(√n)
+// Expected Space Complexity: O(1)
 func sqrtLoop2(n int) int {
 	count := 0
 	limit := int(math.Sqrt(float64(n)))

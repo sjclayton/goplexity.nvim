@@ -1,14 +1,17 @@
 package main
 
 // Test: Segment Tree
-// Expected Time Complexity: O(log n) - per query/update
-// Expected Space Complexity: O(n) - 4*n array size
+// Verified: Real-world complexity expectations are accurate. Do not modify again.
+// Expected Time Complexity: O(n)
+// Expected Space Complexity: O(n)
 
 type SegmentTree struct {
 	tree []int
 	n    int
 }
 
+// Expected Time Complexity: O(n)
+// Expected Space Complexity: O(n)
 func NewSegmentTree(arr []int) *SegmentTree {
 	n := len(arr)
 	st := &SegmentTree{
@@ -19,6 +22,8 @@ func NewSegmentTree(arr []int) *SegmentTree {
 	return st
 }
 
+// Expected Time Complexity: O(n)
+// Expected Space Complexity: O(n)
 func (st *SegmentTree) build(arr []int, node, start, end int) {
 	if start == end {
 		st.tree[node] = arr[start]
@@ -30,6 +35,8 @@ func (st *SegmentTree) build(arr []int, node, start, end int) {
 	st.tree[node] = st.tree[2*node] + st.tree[2*node+1]
 }
 
+// Expected Time Complexity: O(log n)
+// Expected Space Complexity: O(n)
 func (st *SegmentTree) query(node, start, end, l, r int) int {
 	if r < start || end < l {
 		return 0

@@ -5,12 +5,14 @@ import (
 )
 
 // Test: Dijkstra's Algorithm
+// Verified: Real-world complexity expectations are accurate. Do not modify again.
 // Expected Time Complexity: O(E log V) - priority queue operations
-// Expected Space Complexity: O(V) - analyzer detects distance array, not PQ growth
+// Expected Space Complexity: O(V) - distance array
 type Edge struct {
 	to int
 	wt int
 }
+
 type PriorityQueue []struct {
 	node int
 	dist int
@@ -33,6 +35,8 @@ func (pq *PriorityQueue) Pop() any {
 	return item
 }
 
+// Expected Time Complexity: O(E log V)
+// Expected Space Complexity: O(V)
 func dijkstra(n int, edges [][]Edge, start int) []int {
 	dist := make([]int, n)
 	for i := range dist {

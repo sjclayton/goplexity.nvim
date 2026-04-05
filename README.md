@@ -16,7 +16,7 @@ Complexity analyzer for Golang
 ### Time Complexity Detection
 
 - **Loops**: traditional `for i:=0; i<n; i++`, range-based `for _, v := range`, condition-based `for condition`, infinite `for { }`, and constant-bound `for i := 0; i < 10; i++` → O(1)
-- **Logarithmic loops**: `i *= 2`, `i /= 2`, `i <<= 1`, `i >>= 1`, `i += i` → O(log n) (detected in both increment clause and loop body)
+- **Logarithmic loops**: `i *= 2`, `i /= 2`, `i <<= 1`, `i >>= 1`, `i += i` → O(log n)
 - **Square root loops**: `i * i <= n` condition → O(√n)
 - **Nested complexity multiplication**: correctly computes O(n²), O(n³), O(n log n), O(n² log n), O(n² log log n), O(log² n), O(n√n), O(n × 2^n), O(n × n!)
 - **Sorting**: `sort.Slice`, `sort.SliceStable`, `sort.Ints`, `sort.Strings`, `sort.Search` O(log n), `sort.SearchInts`, `sort.SearchFloat64s`, `sort.IsSorted`, `sort.Reverse`, heap operations
@@ -27,7 +27,7 @@ Complexity analyzer for Golang
 - **I/O**: `fmt.Print`, `fmt.Println`, `fmt.Sprint`, `fmt.Sprintf`, `fmt.Fprintf`, `fmt.Errorf`, `fmt.Scan`, `fmt.Fscan`, `fmt.Sscan`, `os.Open`, `os.Create`, `os.Stat`, `os.Lstat`, `os.ReadFile`, `os.WriteFile`, `os.Read`, `os.Write`, `os.ReadDir`, `bufio.NewReader`, `bufio.NewWriter`, `Scanner.Scan`, `io.ReadFull`, `io.Copy`
 - **Encoding**: `json.Marshal`, `json.Unmarshal`, `binary.Read`, `binary.Write`, `base64.NewDecoder`, `base64.NewEncoder`
 - **Hashing**: `sha256.Sum256`, `sha256.New`, `sha512.New`, `md5.Sum`, `md5.New`, `h.Write`, `h.Sum`, `hash.New`
-- **Concurrency**: `go` goroutines, `defer`, `select { }`, buffered/unbuffered channels
+- **Concurrency**: `go` goroutines (O(1) creation baseline), `defer`, `select { }`, buffered/unbuffered channels
 - **Context**: `context.Background`, `context.TODO`, `context.WithTimeout`, `context.WithCancel`, `context.WithDeadline`
 - **Sync**: `sync.Mutex` (Lock/Unlock), `sync.WaitGroup` (Add/Done/Wait), `sync.Once.Do`
 - **Time**: `time.Now`, `time.Sleep`, `time.Since`, `time.Until`
@@ -36,7 +36,7 @@ Complexity analyzer for Golang
 - **Regexp**: `regexp.Compile`, `regexp.Match`, `Regexp.Find`, `Regexp.FindAll`
 - **Compress**: `gzip.NewWriter`, `gzip.NewReader`
 - **Slices & Maps**: `slices.Sort`/`SortFunc`/`SortStableFunc` O(n log n), `slices.BinarySearch`/`BinarySearchFunc` O(log n), `slices.Contains`/`Equal`/`Clone`/`Delete`/`Insert`/`ContainsFunc`/`IndexFunc` O(n), `maps.Keys`/`Values`/`Equal`/`Clone`/`Copy` O(n)
-- **Builtins**: `append` O(1), `copy` O(n), `delete` O(1), `len`/`cap` O(1)
+- **Builtins**: `append` O(1), `copy` O(n), `delete` O(1), `len`/`cap` O(1), `make` (O(n) space/time for allocations, O(1) time for capacity-only slices like `make([]T, 0, n)`)
 - **Algorithms**:
   - Graph: DFS O(V+E), BFS O(V+E), Dijkstra O(E log V), Bellman-Ford O(V×E), Floyd-Warshall O(n³), Topological Sort O(V+E), Kruskal's MST O(E log E), Prim's MST O(V²)
   - Sorting: Merge Sort O(n log n), Quick Sort O(n log n), Heap Sort O(n log n)
@@ -152,19 +152,21 @@ local visible = goplexity.toggle()
 
 ## Requirements
 
-- Neovim 0.8+
+- Neovim 0.12+
+- Treesitter (Main branch / Neovim built-in)
+- Go treesitter parser installed (`:TSInstall go`)
 
 ## Running Tests
 
 The plugin includes two test suites run headlessly via Neovim:
 
 ```bash
-# Main suite: 63 tests covering all analyzer patterns
-nvim --headless --clean -u tests/test_runner.lua
+# Main suite: 63 tests covering all audited algorithm/syntax patterns
+nvim --headless --clean --cmd "set rtp+=~/.local/share/nvim/site" -u tests/test_runner.lua 2>&1
 
-# Constraints suite: 80 tests covering :Goplexity constraints (warnings,
+# Integration suite: 80 tests covering :Goplexity constraints (warnings,
 # memory limits, randomized testing)
-nvim --headless --clean -u tests/test_constraints_e2e.lua
+nvim --headless --clean --cmd "set rtp+=~/.local/share/nvim/site" -u tests/test_constraints_e2e.lua 2>&1
 ```
 
 Each test fixture in `tests/*/main.go` is a real Go file with expected complexity

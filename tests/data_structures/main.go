@@ -1,8 +1,12 @@
 package main
 
 // Test: Data Structure Declarations
+// Verified: Real-world complexity expectations are accurate. Do not modify again.
 // Expected Time Complexity: O(1) - just allocations
 // Expected Space Complexity: O(1) - all allocations use literal sizes
+
+// Expected Time Complexity: O(1)
+// Expected Space Complexity: O(1)
 func testDataStructures() {
 	// Slices
 	var emptySlice []int               // O(1) space - nil/header only

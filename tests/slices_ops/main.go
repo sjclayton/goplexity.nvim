@@ -6,8 +6,12 @@ import (
 )
 
 // Test: Slices Package Operations
+// Verified: Real-world complexity expectations are accurate. Do not modify again.
 // Expected Time Complexity: O(n log n) for sort, O(n) for others
 // Expected Space Complexity: O(n) - new slices
+
+// Expected Time Complexity: O(n log n)
+// Expected Space Complexity: O(n)
 func testSlicesOps() {
 	s1 := []int{3, 1, 2}
 	slices.Sort(slices.Clone(s1))

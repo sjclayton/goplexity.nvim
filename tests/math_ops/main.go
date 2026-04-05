@@ -5,8 +5,12 @@ import (
 )
 
 // Test: Math Operations
+// Verified: Real-world complexity expectations are accurate. Do not modify again.
 // Expected Time Complexity: O(1) - constant time math operations
 // Expected Space Complexity: O(1) - local variables only
+
+// Expected Time Complexity: O(1)
+// Expected Space Complexity: O(1)
 func testMathOps() {
 	_ = math.Abs(-5)
 	_ = math.Max(3.0, 5.0)

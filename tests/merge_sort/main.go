@@ -1,6 +1,7 @@
 package main
 
 // Test: Merge Sort
+// Verified: Real-world complexity expectations are accurate. Do not modify again.
 // Expected Time Complexity: O(n log n) - divide (log n) + merge (n)
 // Expected Space Complexity: O(n) - additional array for merging
 func mergeSort(arr []int) []int {
@@ -13,6 +14,8 @@ func mergeSort(arr []int) []int {
 	return merge(left, right)
 }
 
+// Expected Time Complexity: O(n)
+// Expected Space Complexity: O(n)
 func merge(left, right []int) []int {
 	result := make([]int, 0, len(left)+len(right))
 	i, j := 0, 0

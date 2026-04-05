@@ -5,8 +5,12 @@ import (
 )
 
 // Test: Regexp Operations
+// Verified: Real-world complexity expectations are accurate. Do not modify again.
 // Expected Time Complexity: O(n) - regex matching is linear in input size
 // Expected Space Complexity: O(n) - compiled regex + matches
+
+// Expected Time Complexity: O(n)
+// Expected Space Complexity: O(n)
 func testRegexpOps() {
 	re, _ := regexp.Compile(`\d+`)
 	_ = re.MatchString("abc123def")

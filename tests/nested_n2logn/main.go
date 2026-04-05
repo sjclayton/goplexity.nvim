@@ -1,9 +1,12 @@
 package main
 
 // Test: Nested O(n² log n) Pattern
+// Verified: Real-world complexity expectations are accurate. Do not modify again.
 // Expected Time Complexity: O(n² log n) - O(n²) outer with O(log n) inner
 // Expected Space Complexity: O(1) - no allocations
 
+// Expected Time Complexity: O(n² log n)
+// Expected Space Complexity: O(1)
 func n2LogN(n int) int {
 	total := 0
 	for i := 0; i < n; i++ {

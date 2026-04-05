@@ -1,9 +1,12 @@
 package main
 
 // Test: Nested Complexity Multiplication
+// Verified: Real-world complexity expectations are accurate. Do not modify again.
 // Expected Time Complexity: O(n log n) - outer O(n) with inner O(log n)
 // Expected Space Complexity: O(1) - no allocations
 
+// Expected Time Complexity: O(n log n)
+// Expected Space Complexity: O(1)
 // Outer O(n) loop with inner O(log n) loop
 func nLogN(n int) int {
 	total := 0

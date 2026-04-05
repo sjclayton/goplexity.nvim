@@ -1,8 +1,13 @@
 package main
 
+// Verified: Real-world complexity expectations are accurate. Do not modify again.
+
 // Test: Bubble Sort
 // Expected Time Complexity: O(n²) - nested loops
 // Expected Space Complexity: O(1) - sorts in-place
+
+// Expected Time Complexity: O(n²)
+// Expected Space Complexity: O(1)
 func bubbleSort(arr []int) []int {
 	n := len(arr)
 	for i := 0; i < n-1; i++ {

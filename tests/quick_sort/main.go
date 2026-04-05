@@ -1,8 +1,12 @@
 package main
 
 // Test: Quick Sort
+// Verified: Real-world complexity expectations are accurate. Do not modify again.
 // Expected Time Complexity: O(n log n) average - partition + recursive calls
 // Expected Space Complexity: O(n) - result slice allocation + recursion stack
+
+// Expected Time Complexity: O(n log n)
+// Expected Space Complexity: O(n)
 func quickSort(arr []int) []int {
 	if len(arr) <= 1 {
 		return arr

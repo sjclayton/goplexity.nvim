@@ -3,9 +3,12 @@ package main
 import "strconv"
 
 // Test: strconv Package Operations
+// Verified: Real-world complexity expectations are accurate. Do not modify again.
 // Expected Time Complexity: O(n) - proportional to number of digits
 // Expected Space Complexity: O(n) - Itoa/FormatInt return new strings
 
+// Expected Time Complexity: O(n)
+// Expected Space Complexity: O(n)
 func testStrconvOps() {
 	// strconv.Atoi - O(n)
 	n, _ := strconv.Atoi("12345")

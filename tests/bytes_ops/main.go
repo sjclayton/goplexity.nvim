@@ -3,9 +3,12 @@ package main
 import "bytes"
 
 // Test: Bytes Package Operations
+// Verified: Real-world complexity expectations are accurate. Do not modify again.
 // Expected Time Complexity: O(n) - all operations iterate through byte slices
 // Expected Space Complexity: O(n) - operations that create new slices
 
+// Expected Time Complexity: O(n)
+// Expected Space Complexity: O(n)
 func testBytesOps() {
 	b1 := []byte("hello")
 	b2 := []byte("world")

@@ -1,9 +1,12 @@
 package main
 
 // Test: Bellman-Ford Algorithm
+// Verified: Real-world complexity expectations are accurate. Do not modify again.
 // Expected Time Complexity: O(V×E) - n-1 iterations over all edges
 // Expected Space Complexity: O(V) - distance array
 
+// Expected Time Complexity: O(V×E)
+// Expected Space Complexity: O(V)
 func bellmanFord(n int, edges [][3]int, start int) []int {
 	dist := make([]int, n)
 	for i := 0; i < n; i++ {

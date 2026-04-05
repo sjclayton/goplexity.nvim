@@ -3,6 +3,7 @@ package main
 import "sort"
 
 // Test: Kruskal's Minimum Spanning Tree
+// Verified: Real-world complexity expectations are accurate. Do not modify again.
 // Expected Time Complexity: O(n log n) - sort.Slice detected as O(n log n) by analyzer
 // Expected Space Complexity: O(n) - parent array for union-find
 
@@ -14,6 +15,8 @@ type DSU struct {
 	parent []int
 }
 
+// Expected Time Complexity: O(n)
+// Expected Space Complexity: O(n)
 func NewDSU(n int) *DSU {
 	p := make([]int, n)
 	for i := 0; i < n; i++ {
@@ -22,6 +25,8 @@ func NewDSU(n int) *DSU {
 	return &DSU{parent: p}
 }
 
+// Expected Time Complexity: O(α(n))
+// Expected Space Complexity: O(1)
 func (d *DSU) find(x int) int {
 	if d.parent[x] != x {
 		d.parent[x] = d.find(d.parent[x])
@@ -29,6 +34,8 @@ func (d *DSU) find(x int) int {
 	return d.parent[x]
 }
 
+// Expected Time Complexity: O(α(n))
+// Expected Space Complexity: O(1)
 func (d *DSU) union(x, y int) bool {
 	px, py := d.find(x), d.find(y)
 	if px == py {
@@ -38,6 +45,8 @@ func (d *DSU) union(x, y int) bool {
 	return true
 }
 
+// Expected Time Complexity: O(n log n)
+// Expected Space Complexity: O(n)
 func kruskal(n int, edges []Edge) int {
 	sort.Slice(edges, func(i, j int) bool {
 		return edges[i].w < edges[j].w

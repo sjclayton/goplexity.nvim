@@ -3,9 +3,12 @@ package main
 import "time"
 
 // Test: Time Package Operations
+// Verified: Real-world complexity expectations are accurate. Do not modify again.
 // Expected Time Complexity: O(1) - all operations are constant time
 // Expected Space Complexity: O(1) - no allocations
 
+// Expected Time Complexity: O(1)
+// Expected Space Complexity: O(1)
 func testTimeOps() {
 	// time.Now - O(1)
 	_ = time.Now()

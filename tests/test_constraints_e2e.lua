@@ -6,7 +6,7 @@ package.path = plugin_root .. 'lua/?.lua;' .. plugin_root .. 'lua/?/init.lua;' .
 
 local goplexity = require('goplexity')
 local config = require('goplexity.config')
-local analyzer = require('goplexity.analyzer')
+local analyzer = require('goplexity.ts_analyzer')
 
 local M = {}
 local passed = 0
@@ -487,7 +487,7 @@ function M.run()
 
   local plugin_root = vim.fn.fnamemodify(debug.getinfo(1).source:match('@?(.*)/tests/[^/]*$'), ':p')
   package.path = plugin_root .. 'lua/?.lua;' .. plugin_root .. 'lua/?/init.lua;' .. package.path
-  local analyzer = require('goplexity.analyzer')
+  local analyzer = require('goplexity.ts_analyzer')
 
   -- O(n²) inside O(n) should produce O(n³) via fallback (not in lookup table)
   local buf1 = vim.api.nvim_create_buf(false, true)

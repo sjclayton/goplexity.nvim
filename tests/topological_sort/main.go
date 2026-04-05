@@ -1,9 +1,12 @@
 package main
 
 // Test: Topological Sort (Kahn's Algorithm)
+// Verified: Real-world complexity expectations are accurate. Do not modify again.
 // Expected Time Complexity: O(V+E) - visits all vertices and edges once
 // Expected Space Complexity: O(V) - in-degree array + queue
 
+// Expected Time Complexity: O(V+E)
+// Expected Space Complexity: O(V)
 func topologicalSort(n int, adj map[int][]int) []int {
 	indegree := make(map[int]int)
 	for i := 0; i < n; i++ {

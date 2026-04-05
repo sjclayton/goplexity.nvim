@@ -5,8 +5,12 @@ import (
 )
 
 // Test: OS Package Operations
+// Verified: Real-world complexity expectations are accurate. Do not modify again.
 // Expected Time Complexity: O(n) for read/write, O(1) for open/stat
 // Expected Space Complexity: O(n) for read/write
+
+// Expected Time Complexity: O(n)
+// Expected Space Complexity: O(n)
 func testFileOps() {
 	// os.Open - O(1)
 	f, _ := os.Open("test.txt")

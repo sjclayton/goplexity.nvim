@@ -2,9 +2,9 @@
 
 local M = {}
 
-local analyzer = require('goplexity.analyzer')
-local display = require('goplexity.display')
-local config = require('goplexity.config')
+local ts_analyzer = require('goplexity.ts_analyzer')
+local display     = require('goplexity.display')
+local config      = require('goplexity.config')
 
 -- Store last analysis results per buffer
 M.last_analysis = {}
@@ -14,17 +14,23 @@ function M.setup(user_config)
   config.setup(user_config)
 end
 
--- Run complexity analysis and display results
+-- Run complexity analysis via the tree-sitter backend and display results.
 local function run_analysis(bufnr)
   bufnr = bufnr or vim.api.nvim_get_current_buf()
 
-  local filetype = vim.api.nvim_buf_get_option(bufnr, 'filetype')
+  local filetype = vim.api.nvim_get_option_value('filetype', { buf = bufnr })
   if filetype ~= 'go' then
     vim.notify('Goplexity: Only Go files are supported', vim.log.levels.WARN)
     return nil
   end
 
-  local results = analyzer.analyze(bufnr)
+  local ok, results = pcall(ts_analyzer.analyze, bufnr)
+  if not ok then
+    -- results holds the error string when pcall fails
+    vim.notify('Goplexity: ' .. tostring(results), vim.log.levels.ERROR)
+    return nil
+  end
+
   M.last_analysis[bufnr] = results
   display.display(bufnr, results)
 
@@ -55,8 +61,8 @@ local function set_constraints(args)
     return
   end
 
-  local n = tonumber(args[1])
-  local time_ms = args[2] and tonumber(args[2])
+  local n        = tonumber(args[1])
+  local time_ms  = args[2] and tonumber(args[2])
   local memory_mb = args[3] and tonumber(args[3])
 
   if not n then
@@ -89,8 +95,8 @@ function M.toggle(bufnr)
   return visible
 end
 
--- Auto-refresh on save when hints are visible
--- Auto-analyze on Go file open when enabled = true
+-- Auto-refresh on save when hints are visible.
+-- Auto-analyze on Go file open when enabled = true.
 function M.setup_autocmds()
   local group = vim.api.nvim_create_augroup('GoplexityAutoRefresh', { clear = true })
 

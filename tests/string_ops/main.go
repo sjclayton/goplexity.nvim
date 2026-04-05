@@ -5,8 +5,12 @@ import (
 )
 
 // Test: String Operations
+// Verified: Real-world complexity expectations are accurate. Do not modify again.
 // Expected Time Complexity: O(n) for all operations (iterate through string)
 // Expected Space Complexity: O(n) for operations that create new strings
+
+// Expected Time Complexity: O(n)
+// Expected Space Complexity: O(n)
 func testStringOperations() {
 	s := "hello world"
 

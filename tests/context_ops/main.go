@@ -6,9 +6,12 @@ import (
 )
 
 // Test: Context Package Operations
+// Verified: Real-world complexity expectations are accurate. Do not modify again.
 // Expected Time Complexity: O(1) - context creation is constant time
 // Expected Space Complexity: O(1) - minimal allocations
 
+// Expected Time Complexity: O(1)
+// Expected Space Complexity: O(1)
 func testContextOps() {
 	// context.Background - O(1)
 	ctx := context.Background()

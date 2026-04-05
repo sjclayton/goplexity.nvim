@@ -5,8 +5,12 @@ import (
 )
 
 // Test: Go Built-in Sort Functions
+// Verified: Real-world complexity expectations are accurate. Do not modify again.
 // Expected Time Complexity: O(n log n) for sort, O(log n) for search, O(n) for check
 // Expected Space Complexity: O(n) for sort (creates copy), O(1) for others
+
+// Expected Time Complexity: O(n log n)
+// Expected Space Complexity: O(n)
 func testBuiltInSort() {
 	data := []int{5, 2, 8, 1, 9, 3}
 

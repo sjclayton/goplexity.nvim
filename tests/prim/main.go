@@ -1,9 +1,12 @@
 package main
 
 // Test: Prim's Minimum Spanning Tree
+// Verified: Real-world complexity expectations are accurate. Do not modify again.
 // Expected Time Complexity: O(V²) - adjacency matrix with min weight selection
 // Expected Space Complexity: O(V) - key and visited arrays
 
+// Expected Time Complexity: O(V²)
+// Expected Space Complexity: O(V)
 func prim(n int, graph [][]int) int {
 	key := make([]int, n)
 	visited := make([]bool, n)

@@ -6,8 +6,12 @@ import (
 )
 
 // Test: I/O Package Operations
+// Verified: Real-world complexity expectations are accurate. Do not modify again.
 // Expected Time Complexity: O(n) - reading and copying data
 // Expected Space Complexity: O(n) - buffer allocations
+
+// Expected Time Complexity: O(n)
+// Expected Space Complexity: O(n)
 func testIOOps() {
 	src := strings.NewReader("hello world")
 

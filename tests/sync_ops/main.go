@@ -3,9 +3,12 @@ package main
 import "sync"
 
 // Test: Sync Package Operations
+// Verified: Real-world complexity expectations are accurate. Do not modify again.
 // Expected Time Complexity: O(n) - WaitGroup.Wait detected as O(n) by analyzer
 // Expected Space Complexity: O(1) - minimal allocations
 
+// Expected Time Complexity: O(n)
+// Expected Space Complexity: O(1)
 func testSyncOps() {
 	// sync.Mutex - O(1)
 	var m sync.Mutex

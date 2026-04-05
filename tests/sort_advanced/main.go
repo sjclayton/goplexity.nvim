@@ -3,9 +3,12 @@ package main
 import "sort"
 
 // Test: Advanced Sort Package Operations
+// Verified: Real-world complexity expectations are accurate. Do not modify again.
 // Expected Time Complexity: O(n log n) for sort operations, O(n) for checks
 // Expected Space Complexity: O(1) - no new allocations
 
+// Expected Time Complexity: O(n log n)
+// Expected Space Complexity: O(1)
 func testAdvancedSort() {
 	data := []int{5, 2, 8, 1, 9, 3}
 

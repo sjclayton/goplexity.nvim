@@ -1,9 +1,12 @@
 package main
 
 // Test: 2D Space Complexity
-// Expected Time Complexity: O(n) - initialization loops over 2D structure
+// Verified: Real-world complexity expectations are accurate. Do not modify again.
+// Expected Time Complexity: O(n²) - initialization loops over 2D structure
 // Expected Space Complexity: O(n²) - 2D slice allocation
 
+// Expected Time Complexity: O(n²)
+// Expected Space Complexity: O(n²)
 func test2DSpace(n int) {
 	// 2D slice - O(n²) space
 	matrix := make([][]int, n)

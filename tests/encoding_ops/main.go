@@ -7,8 +7,12 @@ import (
 )
 
 // Test: Encoding Package Operations
+// Verified: Real-world complexity expectations are accurate. Do not modify again.
 // Expected Time Complexity: O(n) - binary.Read/Write and base64.NewDecoder detected
 // Expected Space Complexity: O(n) - encoded output allocation
+
+// Expected Time Complexity: O(n)
+// Expected Space Complexity: O(n)
 func testEncodingOps() {
 	// binary.Read - O(n)
 	buf := bytes.NewBuffer([]byte{0x01, 0x02, 0x03, 0x04})

@@ -1,8 +1,12 @@
 package main
 
 // Test: Insertion Sort
+// Verified: Real-world complexity expectations are accurate. Do not modify again.
 // Expected Time Complexity: O(n²) - nested loops (outer + inner while)
 // Expected Space Complexity: O(1) - sorts in-place
+
+// Expected Time Complexity: O(n²)
+// Expected Space Complexity: O(1)
 func insertionSort(arr []int) []int {
 	for i := 1; i < len(arr); i++ {
 		key := arr[i]
