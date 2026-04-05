@@ -114,6 +114,38 @@ function M.setup_autocmds()
     desc = 'Re-run goplexity analysis on save when hints are visible',
   })
 
+  vim.api.nvim_create_autocmd({ 'BufDelete', 'BufWipeout' }, {
+    group = group,
+    pattern = '*.go',
+    callback = function(args)
+      M.last_analysis[args.buf] = nil
+      display.clear(args.buf)
+    end,
+    desc = 'Cleanup goplexity data when buffer is closed',
+  })
+
+  local timers = {}
+  vim.api.nvim_create_autocmd({ 'TextChanged', 'InsertLeave' }, {
+    group = group,
+    pattern = '*.go',
+    callback = function(args)
+      if not display.visible then
+        return
+      end
+      if timers[args.buf] then
+        timers[args.buf]:stop()
+        timers[args.buf] = nil
+      end
+      timers[args.buf] = vim.defer_fn(function()
+        if vim.api.nvim_buf_is_valid(args.buf) then
+          run_analysis(args.buf)
+        end
+        timers[args.buf] = nil
+      end, 500)
+    end,
+    desc = 'Debounced live-refresh of goplexity analysis',
+  })
+
   vim.api.nvim_create_autocmd('FileType', {
     group = group,
     pattern = 'go',

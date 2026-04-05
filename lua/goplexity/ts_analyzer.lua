@@ -124,7 +124,7 @@ local METHOD_COMPLEXITIES = {
 
 -- Unqualified builtins.
 local BUILTINS = {
-  append = 'O(1)', copy = 'O(n)', delete = 'O(1)', len = 'O(1)', cap = 'O(1)',
+  append = 'O(1)', copy = 'O(n)', delete = 'O(1)', len = 'O(1)', cap = 'O(1)', recover = 'O(1)',
 }
 
 -- ---------------------------------------------------------------------------
@@ -349,10 +349,6 @@ end
 -- ---------------------------------------------------------------------------
 
 --- Determine the space complexity of a make() call_expression node.
---- @param  call_node TSNode  the call_expression node
---- @param  lines     string[]
---- @return string
---- Determine the complexity of a make() call_expression node.
 --- @param  call_node TSNode  the call_expression node
 --- @param  lines     string[]
 --- @param  mode      'time'|'space'
@@ -655,38 +651,31 @@ function M.analyze(bufnr)
   }
 
   -- -------------------------------------------------------------------------
-  -- Pass 1: for_statement nodes → base complexity map.
-  -- Must come before later passes that walk ancestors.
+  -- Pass 1: Discovery. Collect loops and function declarations.
   -- -------------------------------------------------------------------------
   local loop_base = {}  -- TSNode ID → string
+  local func_map  = {}  -- body TSNode ID → table
+
   for id, node in query:iter_captures(root, bufnr) do
-    if query.captures[id] == 'goplexity.loop' then
+    local capture_name = query.captures[id]
+    
+    if capture_name == 'goplexity.loop' then
       loop_base[node:id()] = base_complexity_of_for(node, lines)
-    end
-  end
-
-  -- -------------------------------------------------------------------------
-  -- Pass 2: function declarations → algorithm detection.
-  -- -------------------------------------------------------------------------
-  -- func_map: body TSNode ID → { name, line, time_complexity, space_complexity, is_algorithm }
-  local func_map = {}
-
-  for id, node in query:iter_captures(root, bufnr) do
-    if query.captures[id] == 'goplexity.func.decl' then
+      
+    elseif capture_name == 'goplexity.func.decl' then
       local name_node = field1(node, 'name')
       local body_node = field1(node, 'body')
       if name_node and body_node then
-        local func_name  = node_text(name_node, lines)
+        local func_name = node_text(name_node, lines)
         local algo_t, algo_s = detect_algorithm(body_node, func_name, lines)
-        local entry = {
+        func_map[body_node:id()] = {
           name             = func_name,
           line             = node_line(node),
           time_complexity  = algo_t or 'O(1)',
           space_complexity = algo_s or 'O(1)',
           is_algorithm     = algo_t ~= nil,
         }
-        func_map[body_node:id()] = entry
-
+        -- Dominant complexity for detected algorithms
         if algo_t then
           results.overall_time = get_dominant(results.overall_time, algo_t)
           if algo_s then
@@ -697,7 +686,7 @@ function M.analyze(bufnr)
     end
   end
 
-  -- Helper: find the func_map entry that owns a given node (via body ancestor).
+  -- Helper: find the func_map entry that owns a given node
   local function owning_func(node)
     local enc = enclosing_func_node(node)
     if not enc then return nil end
@@ -706,26 +695,25 @@ function M.analyze(bufnr)
   end
 
   -- -------------------------------------------------------------------------
-  -- Pass 3: loops — compute effective (nested) complexity and record.
+  -- Pass 2: Resolution. Compute nested complexities and resolve all calls.
   -- -------------------------------------------------------------------------
   for id, node in query:iter_captures(root, bufnr) do
-    if query.captures[id] == 'goplexity.loop' then
+    local capture_name = query.captures[id]
+
+    if capture_name == 'goplexity.loop' then
       local base      = loop_base[node:id()] or 'O(n)'
       local ancestors = enclosing_loop_complexities(node, loop_base)
       local effective = multiply(multiply_all(ancestors), base)
-      local nesting   = #ancestors
-
+      
       results.loops[#results.loops + 1] = {
         line            = node_line(node),
         complexity      = effective,
         base_complexity = base,
-        nesting_level   = nesting,
+        nesting_level   = #ancestors,
       }
-
+      
+      local fe = owning_func(node)
       if effective ~= 'O(1)' then
-        local fe = owning_func(node)
-        -- If the function is a detected algorithm, don't pollute its overall_time
-        -- with internal loop complexity.
         if not fe or not fe.is_algorithm then
           results.overall_time = get_dominant(results.overall_time, effective)
         end
@@ -733,88 +721,60 @@ function M.analyze(bufnr)
           fe.time_complexity = get_dominant(fe.time_complexity, effective)
         end
       end
-    end
-  end
 
-  -- -------------------------------------------------------------------------
-  -- Pass 4: qualified/method calls — pkg.Fn(...) or obj.Method(...)
-  -- -------------------------------------------------------------------------
-  for id, node in query:iter_captures(root, bufnr) do
-    if query.captures[id] == 'goplexity.call.qualified' then
-      local sel = field1(node, 'function')
-      if sel and sel:type() == 'selector_expression' then
-        local pkg_node = field1(sel, 'operand')
-        local fn_node  = field1(sel, 'field')
-        if fn_node then
-          local pkg = pkg_node and node_text(pkg_node, lines) or ''
-          local fn  = node_text(fn_node,  lines)
-          
-          local base_c = (STDLIB[pkg] or {})[fn]
-          if not base_c and METHOD_COMPLEXITIES[fn] then
-            -- wg.Add and time.Add are O(1). Only big.Int.Add/Sub is O(n).
-            if (fn == 'Add' or fn == 'Sub') and not pkg:match('big%.Int') then
-              base_c = nil
-            elseif (fn == 'Mul' or fn == 'Div') and not pkg:match('big%.Int') then
-              base_c = nil
-            else
-              base_c = METHOD_COMPLEXITIES[fn]
-            end
-          end
-          
-          if base_c then
-            local ancs = enclosing_loop_complexities(node, loop_base)
-            local eff  = multiply(multiply_all(ancs), base_c)
-            if eff ~= 'O(1)' then
-              results.function_calls[#results.function_calls + 1] = {
-                line            = node_line(node),
-                complexity      = eff,
-                base_complexity = base_c,
-                nesting_level   = #ancs,
-              }
-              local fe = owning_func(node)
-              if not fe or not fe.is_algorithm then
-                results.overall_time = get_dominant(results.overall_time, eff)
-              end
-              if fe and not fe.is_algorithm then
-                fe.time_complexity = get_dominant(fe.time_complexity, eff)
-              end
-            end
-          end
-        end
-      end
-    end
-  end
-
-  -- -------------------------------------------------------------------------
-  -- Pass 4.5: Internal function calls (e.g. lcm calling gcd)
-  -- -------------------------------------------------------------------------
-  -- We collect simple identifiers that are calls and match names in func_map.
-  -- This allows inheriting algorithm complexity.
-  for id, node in query:iter_captures(root, bufnr) do
-    local capture = query.captures[id]
-    if capture == 'goplexity.call.builtin_expr' or capture == 'goplexity.call.qualified' then
+    elseif capture_name == 'goplexity.call.qualified' or capture_name == 'goplexity.call.builtin_expr' then
+      local base_c = nil
       local fn_child = field1(node, 'function')
       local name = nil
+      
       if fn_child then
-        if fn_child:type() == 'identifier' then
+        if fn_child:type() == 'selector_expression' then
+          local pkg_node = field1(fn_child, 'operand')
+          local fn_node  = field1(fn_child, 'field')
+          if fn_node then
+            local pkg = pkg_node and node_text(pkg_node, lines) or ''
+            local fn  = node_text(fn_node, lines)
+            name = fn
+            base_c = (STDLIB[pkg] or {})[fn]
+            if not base_c and METHOD_COMPLEXITIES[fn] then
+              if (fn == 'Add' or fn == 'Sub' or fn == 'Mul' or fn == 'Div') and not pkg:match('big%.Int') then
+                base_c = nil
+              else
+                base_c = METHOD_COMPLEXITIES[fn]
+              end
+            end
+          end
+        elseif fn_child:type() == 'identifier' then
           name = node_text(fn_child, lines)
-        elseif fn_child:type() == 'selector_expression' then
-          local field_node = field1(fn_child, 'field')
-          if field_node then name = node_text(field_node, lines) end
+          base_c = BUILTINS[name]
+          if name == 'make' then
+            base_c = complexity_of_make(node, lines, 'time')
+            -- Also track space for make
+            local sc = complexity_of_make(node, lines, 'space')
+            results.space_items[#results.space_items + 1] = { line = node_line(node), complexity = sc }
+            results.space = get_dominant(results.space, sc)
+            local fe = owning_func(node)
+            if fe then fe.space_complexity = get_dominant(fe.space_complexity, sc) end
+          elseif name == 'new' then
+            results.space_items[#results.space_items + 1] = { line = node_line(node), complexity = 'O(1)' }
+          end
         end
       end
-      
-      if name and not BUILTINS[name] and name ~= 'make' and name ~= 'new' then
-        local target = nil
+
+      -- If not a builtin/stdlib, check if it's an internal function
+      if not base_c and name and not BUILTINS[name] and name ~= 'make' and name ~= 'new' then
         for _, fe in pairs(func_map) do
-          if fe.name == name then target = fe; break end
+          if fe.name == name then
+            if fe.time_complexity ~= 'O(1)' then base_c = fe.time_complexity end
+            break
+          end
         end
-        
-        if target and target.time_complexity ~= 'O(1)' then
-          local base_c = target.time_complexity
-          local ancs = enclosing_loop_complexities(node, loop_base)
-          local eff  = multiply(multiply_all(ancs), base_c)
-          
+      end
+
+      if base_c then
+        local ancs = enclosing_loop_complexities(node, loop_base)
+        local eff  = multiply(multiply_all(ancs), base_c)
+        if eff ~= 'O(1)' then
           results.function_calls[#results.function_calls + 1] = {
             line            = node_line(node),
             complexity      = eff,
@@ -822,78 +782,20 @@ function M.analyze(bufnr)
             nesting_level   = #ancs,
           }
           local fe = owning_func(node)
-          if fe and not fe.is_algorithm then
-            fe.time_complexity = get_dominant(fe.time_complexity, eff)
+          if not fe or not fe.is_algorithm then
             results.overall_time = get_dominant(results.overall_time, eff)
           end
-        end
-      end
-    end
-  end
-
-  -- -------------------------------------------------------------------------
-  -- Pass 5: unqualified builtins — make, new, append, copy, delete, len, cap
-  -- -------------------------------------------------------------------------
-  for id, node in query:iter_captures(root, bufnr) do
-    if query.captures[id] == 'goplexity.call.builtin_expr' then
-      local fn_child = field1(node, 'function')
-      if fn_child then
-        local fn_name = node_text(fn_child, lines)
-
-        -- Space: make() and new()
-        -- Space: make() and new()
-        if fn_name == 'make' then
-          local sc   = complexity_of_make(node, lines, 'space')
-          local line = node_line(node)
-          results.space_items[#results.space_items + 1] = { line = line, complexity = sc }
-          results.space = get_dominant(results.space, sc)
-          local fe = owning_func(node)
-          if fe then
-            fe.space_complexity = get_dominant(fe.space_complexity, sc)
-          end
-        elseif fn_name == 'new' then
-          results.space_items[#results.space_items + 1] = { line = node_line(node), complexity = 'O(1)' }
-        end
-
-        -- Time: any BUILTINS entry or make()
-        local base_c = BUILTINS[fn_name]
-        if fn_name == 'make' then
-          base_c = complexity_of_make(node, lines, 'time')
-        end
-
-        if base_c then
-          local ancs = enclosing_loop_complexities(node, loop_base)
-          local eff  = multiply(multiply_all(ancs), base_c)
-          if eff ~= 'O(1)' then
-            results.function_calls[#results.function_calls + 1] = {
-              line            = node_line(node),
-              complexity      = eff,
-              base_complexity = base_c,
-              nesting_level   = #ancs,
-            }
-            local fe = owning_func(node)
-            if not fe or not fe.is_algorithm then
-              results.overall_time = get_dominant(results.overall_time, eff)
-            end
-            if fe and not fe.is_algorithm then
-              fe.time_complexity = get_dominant(fe.time_complexity, eff)
-            end
+          if fe and not fe.is_algorithm then
+            fe.time_complexity = get_dominant(fe.time_complexity, eff)
           end
         end
       end
-    end
-  end
 
-  -- -------------------------------------------------------------------------
-  -- Pass 6: Goroutines (go_statement) -> O(n)
-  -- -------------------------------------------------------------------------
-  for id, node in query:iter_captures(root, bufnr) do
-    if query.captures[id] == 'goplexity.go_stmt' then
+    elseif capture_name == 'goplexity.go_stmt' then
       local base_c = 'O(1)'
       local ancs = enclosing_loop_complexities(node, loop_base)
       local eff  = multiply(multiply_all(ancs), base_c)
       
-      -- We add it to function_calls mapped as a go statement
       results.function_calls[#results.function_calls + 1] = {
         line            = node_line(node),
         complexity      = eff,

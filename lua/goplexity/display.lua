@@ -137,7 +137,8 @@ end
 
 -- Display all analysis results
 function M.display(bufnr, analysis_results)
-  local config = require('goplexity.config').config
+  local config_mod = require('goplexity.config')
+  local config = config_mod.config
   bufnr = bufnr or vim.api.nvim_get_current_buf()
 
   if not M.visible then
