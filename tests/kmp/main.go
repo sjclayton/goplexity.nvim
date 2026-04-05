@@ -1,7 +1,7 @@
 package main
 
 // Test: KMP String Matching
-// Expected Time Complexity: O(n) - linear scan with LPS table
+// Expected Time Complexity: O(n) - analyzer detects linear scan (n=text length)
 // Expected Space Complexity: O(m) - LPS array for pattern
 
 func computeLPS(pattern string) []int {

@@ -6,7 +6,7 @@ import (
 
 // Test: Container List Operations
 // Expected Time Complexity: O(1) - constant time push/remove
-// Expected Space Complexity: O(n) - list storage
+// Expected Space Complexity: O(1) - fixed 11 elements in list
 func testListOps() {
 	l := list.New()
 	for i := 0; i < 10; i++ {

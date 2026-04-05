@@ -3,7 +3,7 @@ package main
 import "sync"
 
 // Test: Sync Package Operations
-// Expected Time Complexity: O(n) - WaitGroup.Wait is O(n)
+// Expected Time Complexity: O(n) - WaitGroup.Wait detected as O(n) by analyzer
 // Expected Space Complexity: O(1) - minimal allocations
 
 func testSyncOps() {

@@ -6,7 +6,7 @@ import (
 
 // Test: Dijkstra's Algorithm
 // Expected Time Complexity: O(E log V) - priority queue operations
-// Expected Space Complexity: O(V) - distance map + priority queue
+// Expected Space Complexity: O(V) - analyzer detects distance array, not PQ growth
 type Edge struct {
 	to int
 	wt int

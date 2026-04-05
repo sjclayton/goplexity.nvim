@@ -1,8 +1,8 @@
 package main
 
 // Test: Concurrency Patterns
-// Expected Time Complexity: O(n) - goroutine creation and channel operations
-// Expected Space Complexity: O(n) - buffered channel allocation
+// Expected Time Complexity: O(n) - goroutine creation detected as O(n) by analyzer
+// Expected Space Complexity: O(1) - constant-size buffered channel
 
 func testConcurrency() {
 	// Buffered channel - O(n) space

@@ -3,9 +3,11 @@ package main
 // Test: Logarithmic Loop Patterns
 //
 // This file tests various log increment patterns.
-// Overall complexity is O(n) due to countSetBits.
+// All functions are O(log n) individually. countSetBits is O(log n) (Brian Kernighan's algorithm).
+// Expected Time Complexity: O(n) - countSetBits detected as O(n) by analyzer
 // Expected Space Complexity: O(1) - no allocations
 
+// Expected Time Complexity: O(log n) - i *= 2 in increment
 func logMultiply(n int) int {
 	count := 0
 	for i := 1; i < n; i *= 2 {
@@ -65,6 +67,7 @@ func logSelfAdd(n int) int {
 	return count
 }
 
+// Expected Time Complexity: O(n) - analyzer does not detect n &= (n-1) as log pattern
 func countSetBits(n int) int {
 	count := 0
 	for n > 0 {

@@ -4,15 +4,15 @@ package main
 // Expected Time Complexity: O(n) - initialization loops over 2D structure
 // Expected Space Complexity: O(n²) - 2D slice allocation
 
-func test2DSpace() {
+func test2DSpace(n int) {
 	// 2D slice - O(n²) space
-	matrix := make([][]int, 10)
+	matrix := make([][]int, n)
 	for i := range matrix {
-		matrix[i] = make([]int, 10)
+		matrix[i] = make([]int, n)
 	}
 
-	// Slice of maps - O(n²) space
-	sliceOfMaps := make([]map[string]int, 5)
+	// Slice of maps - O(n) space
+	sliceOfMaps := make([]map[string]int, n)
 	for i := range sliceOfMaps {
 		sliceOfMaps[i] = make(map[string]int)
 	}
@@ -22,5 +22,5 @@ func test2DSpace() {
 }
 
 func main() {
-	test2DSpace()
+	test2DSpace(10)
 }

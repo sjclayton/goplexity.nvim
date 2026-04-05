@@ -338,6 +338,8 @@ function M.run()
     { name = 'mixed_space_patterns', file = test_dir .. 'mixed_space_patterns/main.go' },
     -- Nested complexity
     { name = 'nested_quartic', file = test_dir .. 'nested_quartic/main.go' },
+    { name = 'nested_log_squared', file = test_dir .. 'nested_log_squared/main.go' },
+    { name = 'nested_n_sqrt', file = test_dir .. 'nested_n_sqrt/main.go' },
     -- Other
     { name = 'method_receiver', file = test_dir .. 'method_receiver/main.go' },
   }

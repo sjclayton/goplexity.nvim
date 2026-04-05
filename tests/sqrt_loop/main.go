@@ -3,7 +3,7 @@ package main
 import "math"
 
 // Test: Square Root Loop Pattern
-// Expected Time Complexity: O(n) - sqrtLoop1 is O(√n), sqrtLoop2 is O(n)
+// Expected Time Complexity: O(n) - sqrtLoop1 is O(√n), sqrtLoop2 is O(n) (analyzer sees linear loop over pre-computed limit)
 // Expected Space Complexity: O(1) - no allocations
 
 // i * i <= n pattern - O(√n)

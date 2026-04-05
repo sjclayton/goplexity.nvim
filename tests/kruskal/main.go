@@ -3,7 +3,7 @@ package main
 import "sort"
 
 // Test: Kruskal's Minimum Spanning Tree
-// Expected Time Complexity: O(n log n) - sort.Slice dominates
+// Expected Time Complexity: O(n log n) - sort.Slice detected as O(n log n) by analyzer
 // Expected Space Complexity: O(n) - parent array for union-find
 
 type Edge struct {

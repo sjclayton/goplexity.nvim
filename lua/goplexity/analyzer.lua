@@ -351,7 +351,7 @@ local function analyze_go_for_loop(line, lines, current_line)
   -- Extract increment to detect logarithmic patterns
   local init, cond, increment = line:match('for%s+(.-);%s*(.-);%s*(.-)%s*%{?%s*$')
 
-  if increment then
+  if increment and increment ~= '' then
     -- Check if the condition uses ONLY a literal number > 1 (constant iterations)
     -- e.g., "i < 10" but NOT "i < n-1", "i < len(arr)", or "i > 0"
     -- The number must be >= 2 (single digit 2-9 or multi-digit)
@@ -383,6 +383,14 @@ local function analyze_go_for_loop(line, lines, current_line)
       return 'O(n)'
     end
     return 'O(n)' -- Default for traditional for loops
+  end
+
+  -- Traditional for loop with empty increment: for i := 1; i < n; { i *= 2 }
+  if line:match(CONTROL_PATTERNS.FOR_TRADITIONAL) then
+    if scan_body_for_log_increment(lines, current_line + 1) then
+      return 'O(log n)'
+    end
+    return 'O(n)'
   end
 
   -- Go condition-based for loop: for condition {

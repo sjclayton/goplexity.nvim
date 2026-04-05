@@ -159,7 +159,7 @@ local visible = goplexity.toggle()
 The plugin includes two test suites run headlessly via Neovim:
 
 ```bash
-# Main suite: 57 tests covering all analyzer patterns
+# Main suite: 63 tests covering all analyzer patterns
 nvim --headless --clean -u tests/test_runner.lua
 
 # Constraints suite: 80 tests covering :Goplexity constraints (warnings,

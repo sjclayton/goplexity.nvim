@@ -4,7 +4,7 @@ import "strconv"
 
 // Test: strconv Package Operations
 // Expected Time Complexity: O(n) - proportional to number of digits
-// Expected Space Complexity: O(1) - returns new strings
+// Expected Space Complexity: O(n) - Itoa/FormatInt return new strings
 
 func testStrconvOps() {
 	// strconv.Atoi - O(n)
