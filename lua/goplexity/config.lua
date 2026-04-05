@@ -5,21 +5,32 @@ local M = {}
 -- Complexity to operations mapping (matches analyzer hierarchy order)
 local COMPLEXITY_OPS = {
   ['O(1)'] = 1,
+  ['O(α(n))'] = 1,
   ['O(log n)'] = 100,
-  ['O(log² n)'] = 10000,
+  ['O(log² n)'] = 100,
+  ['O(log³ n)'] = 100,
+  ['O(log⁴ n)'] = 100,
   ['O(√n)'] = 10000,
+  ['O(√n log n)'] = 1000,
+  ['O(L)'] = 100,
+  ['O(nL)'] = 100,
   ['O(n)'] = 1000000,
-  ['O(n log n)'] = 20000000,
   ['O(n log log n)'] = 5000000,
+  ['O(n log n)'] = 20000000,
   ['O(n√n)'] = 100000000,
   ['O(n²)'] = 1000000000,
   ['O(n² log n)'] = 20000000000,
+  ['O(n² log log n)'] = 10000000000,
   ['O(n³)'] = 100000000000,
+  ['O(n⁴)'] = 10000000000000,
+  ['O(n⁵)'] = 1000000000000000,
   ['O(V+E)'] = 1000000,
   ['O(V×E)'] = 1000000000,
   ['O(E log V)'] = 20000000,
   ['O(2^n)'] = 1000000000000000,
-  ['O(n!)'] = 10000000000000000,
+  ['O(n×2^n)'] = 10000000000000000,
+  ['O(n×n!)'] = 100000000000000000,
+  ['O(n!)'] = 1000000000000000000,
 }
 
 -- Default configuration
@@ -79,19 +90,46 @@ local function complexity_to_ops(complexity_str, n)
   end
 
   -- Scale by n for complexity factors
-  if complexity_str:match('n²') then
-    ops = ops * n * n
+  if complexity_str:match('n⁵') then
+    ops = ops * n * n * n * n * n
+  elseif complexity_str:match('n⁴') then
+    ops = ops * n * n * n * n
   elseif complexity_str:match('n³') then
     ops = ops * n * n * n
-  elseif complexity_str:match('n log n') or complexity_str:match('n log log n') then
+  elseif complexity_str:match('n²') then
+    ops = ops * n * n
+  elseif complexity_str:match('n log log n') then
+    ops = ops * n * (math.log(math.log(n) / math.log(2)) / math.log(2))
+  elseif complexity_str:match('n√n') then
+    ops = ops * n * math.sqrt(n)
+  elseif complexity_str:match('√n log n') then
+    ops = ops * math.sqrt(n) * (math.log(n) / math.log(2))
+  elseif complexity_str:match('n log n') then
     ops = ops * n * (math.log(n) / math.log(2))
+  elseif complexity_str:match('log⁴ n') then
+    local log2n = math.log(n) / math.log(2)
+    ops = ops * log2n * log2n * log2n * log2n
+  elseif complexity_str:match('log³ n') then
+    local log2n = math.log(n) / math.log(2)
+    ops = ops * log2n * log2n * log2n
   elseif complexity_str:match('log² n') then
     local log2n = math.log(n) / math.log(2)
     ops = ops * log2n * log2n
+  elseif complexity_str:match('√n') then
+    ops = ops * math.sqrt(n)
   elseif complexity_str:match('O%(n%)') and not complexity_str:match('O%(n²%)') then
     ops = ops * n
   elseif complexity_str:match('O%(V%+E%)') or complexity_str:match('O%(E log V%)') then
     ops = ops * n
+  elseif complexity_str:match('O%(n×2') then
+    ops = ops * n * (2 ^ n)
+  elseif complexity_str:match('O%(n×n!%)') then
+    -- Approximate n! for scaling purposes
+    local factorial = 1
+    for i = 2, math.min(n, 20) do
+      factorial = factorial * i
+    end
+    ops = ops * n * factorial
   end
 
   return ops
@@ -109,19 +147,45 @@ local function complexity_to_mb(complexity_str, n)
   end
 
   -- Scale by n for space factors (same scaling as time)
-  if complexity_str:match('n²') then
-    ops = ops * n * n
+  if complexity_str:match('n⁵') then
+    ops = ops * n * n * n * n * n
+  elseif complexity_str:match('n⁴') then
+    ops = ops * n * n * n * n
   elseif complexity_str:match('n³') then
     ops = ops * n * n * n
-  elseif complexity_str:match('n log n') or complexity_str:match('n log log n') then
+  elseif complexity_str:match('n²') then
+    ops = ops * n * n
+  elseif complexity_str:match('n log log n') then
+    ops = ops * n * (math.log(math.log(n) / math.log(2)) / math.log(2))
+  elseif complexity_str:match('n√n') then
+    ops = ops * n * math.sqrt(n)
+  elseif complexity_str:match('√n log n') then
+    ops = ops * math.sqrt(n) * (math.log(n) / math.log(2))
+  elseif complexity_str:match('n log n') then
     ops = ops * n * (math.log(n) / math.log(2))
+  elseif complexity_str:match('log⁴ n') then
+    local log2n = math.log(n) / math.log(2)
+    ops = ops * log2n * log2n * log2n * log2n
+  elseif complexity_str:match('log³ n') then
+    local log2n = math.log(n) / math.log(2)
+    ops = ops * log2n * log2n * log2n
   elseif complexity_str:match('log² n') then
     local log2n = math.log(n) / math.log(2)
     ops = ops * log2n * log2n
+  elseif complexity_str:match('√n') then
+    ops = ops * math.sqrt(n)
   elseif complexity_str:match('O%(n%)') and not complexity_str:match('O%(n²%)') then
     ops = ops * n
   elseif complexity_str:match('O%(V%+E%)') or complexity_str:match('O%(E log V%)') then
     ops = ops * n
+  elseif complexity_str:match('O%(n×2') then
+    ops = ops * n * (2 ^ n)
+  elseif complexity_str:match('O%(n×n!%)') then
+    local factorial = 1
+    for i = 2, math.min(n, 20) do
+      factorial = factorial * i
+    end
+    ops = ops * n * factorial
   end
 
   -- Convert ops to rough MB estimate (1 op ≈ 1 byte, so divide by 1e6 for MB)

@@ -162,7 +162,7 @@ The plugin includes two test suites run headlessly via Neovim:
 # Main suite: 57 tests covering all analyzer patterns
 nvim --headless --clean -u tests/test_runner.lua
 
-# Constraints suite: 63 tests covering :Goplexity constraints (warnings,
+# Constraints suite: 80 tests covering :Goplexity constraints (warnings,
 # memory limits, randomized testing)
 nvim --headless --clean -u tests/test_constraints_e2e.lua
 ```

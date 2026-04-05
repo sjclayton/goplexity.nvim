@@ -142,11 +142,83 @@ function M.run()
   warnings = config.should_warn('O(V×E)', nil)
   assert_eq('O(V×E) at n=1 with 1000ms warns', #warnings, 1)
 
-  -- O(log² n): base=1e4, log²(1000)≈100, ops=1e6, max=1e8 → no warn
+  -- O(log² n): base=1e2, log²(1000)≈100, ops=1e4, max=1e8 → no warn
   reset()
   config.set_constraints(1000, 1000)
   warnings = config.should_warn('O(log² n)', nil)
   assert_eq('O(log² n) at n=1000 with 1000ms no warn', #warnings, 0)
+
+  -- O(√n): base=1e4, sqrt(1e6)=1000, ops=1e7, max=1e8 → no warn
+  reset()
+  config.set_constraints(1000000, 1000)
+  warnings = config.should_warn('O(√n)', nil)
+  assert_eq('O(√n) at n=1e6 with 1000ms no warn', #warnings, 0)
+
+  -- O(α(n)): base=1, no n-scaling, ops=1, max=1e8 → no warn
+  reset()
+  config.set_constraints(1000000, 1)
+  warnings = config.should_warn('O(α(n))', nil)
+  assert_eq('O(α(n)) never warns', #warnings, 0)
+
+  -- O(L): base=1e2, no n-scaling, ops=100, max=1e5 → no warn
+  reset()
+  config.set_constraints(1000000, 1)
+  warnings = config.should_warn('O(L)', nil)
+  assert_eq('O(L) base ops too low to warn', #warnings, 0)
+
+  -- O(n√n): base=1e8, n=100, sqrt(100)=10, ops=1e8*100*10=1e11, max=1e8 → warns
+  reset()
+  config.set_constraints(100, 1000)
+  warnings = config.should_warn('O(n√n)', nil)
+  assert_eq('O(n√n) at n=100 with 1000ms warns', #warnings, 1)
+
+  -- O(n⁴): base=1e13, n=10, ops=1e13*10*10*10*10=1e17, max=1e8 → warns
+  reset()
+  config.set_constraints(10, 1000)
+  warnings = config.should_warn('O(n⁴)', nil)
+  assert_eq('O(n⁴) at n=10 with 1000ms warns', #warnings, 1)
+
+  -- O(√n log n): base=1e3, sqrt(1e6)=1000, log₂(1e6)≈20, ops=1e3*1000*20=2e7, max=1e8 → no warn
+  reset()
+  config.set_constraints(1000000, 1000)
+  warnings = config.should_warn('O(√n log n)', nil)
+  assert_eq('O(√n log n) at n=1e6 with 1000ms no warn', #warnings, 0)
+
+  -- O(log³ n): base=1e2, log³(1000)≈1000, ops=1e5, max=1e8 → no warn
+  reset()
+  config.set_constraints(1000, 1000)
+  warnings = config.should_warn('O(log³ n)', nil)
+  assert_eq('O(log³ n) at n=1000 with 1000ms no warn', #warnings, 0)
+
+  -- O(log⁴ n): base=1e2, log⁴(1000)≈10000, ops=1e6, max=1e8 → no warn
+  reset()
+  config.set_constraints(1000, 1000)
+  warnings = config.should_warn('O(log⁴ n)', nil)
+  assert_eq('O(log⁴ n) at n=1000 with 1000ms no warn', #warnings, 0)
+
+  -- O(n² log log n): base=1e10, n=10, log₂(log₂(10))≈1.7, ops=1e10*100*1.7=1.7e12, max=1e8 → warns
+  reset()
+  config.set_constraints(10, 1000)
+  warnings = config.should_warn('O(n² log log n)', nil)
+  assert_eq('O(n² log log n) at n=10 with 1000ms warns', #warnings, 1)
+
+  -- O(n×2^n): base=1e16, n=5, 2^5=32, ops=1e16*5*32=1.6e18, max=1e8 → warns
+  reset()
+  config.set_constraints(5, 1000)
+  warnings = config.should_warn('O(n×2^n)', nil)
+  assert_eq('O(n×2^n) at n=5 with 1000ms warns', #warnings, 1)
+
+  -- O(n×n!): base=1e17, n=5, 5!=120, ops=1e17*5*120=6e19, max=1e8 → warns
+  reset()
+  config.set_constraints(5, 1000)
+  warnings = config.should_warn('O(n×n!)', nil)
+  assert_eq('O(n×n!) at n=5 with 1000ms warns', #warnings, 1)
+
+  -- O(nL): base=1e2, n=1000, ops=1e2*1000=1e5, max=1e8 → no warn
+  reset()
+  config.set_constraints(1000, 1000)
+  warnings = config.should_warn('O(nL)', nil)
+  assert_eq('O(nL) at n=1000 with 1000ms no warn', #warnings, 0)
 
   -- Step 7: Verify warning message format
   print('\n--- Step 7: Warning message content ---')
@@ -337,7 +409,7 @@ function M.run()
   math.randomseed(os.time())
 
   local complexities =
-    { 'O(1)', 'O(log n)', 'O(n)', 'O(n log n)', 'O(n²)', 'O(n³)', 'O(V+E)', 'O(E log V)', 'O(V×E)' }
+    { 'O(1)', 'O(α(n))', 'O(log n)', 'O(log² n)', 'O(log³ n)', 'O(√n)', 'O(n)', 'O(n log n)', 'O(n√n)', 'O(n²)', 'O(n³)', 'O(n⁴)', 'O(n⁵)', 'O(V+E)', 'O(E log V)', 'O(V×E)', 'O(2^n)', 'O(n!)' }
 
   -- Generate 50 random constraint + complexity combinations and verify no crashes
   local random_passes = 0
@@ -408,6 +480,111 @@ function M.run()
   end
   assert_eq('O(n²) at n=500 100ms/10MB time warns', time_w, 1)
   assert_eq('O(n²) at n=500 100ms/10MB space warns', space_w, 1)
+
+  -- Step 17: Verify analyzer multiplication fallback produces simplified results
+  print('\n--- Step 17: Analyzer multiplication fallback ---')
+  reset()
+
+  local plugin_root = vim.fn.fnamemodify(debug.getinfo(1).source:match('@?(.*)/tests/[^/]*$'), ':p')
+  package.path = plugin_root .. 'lua/?.lua;' .. plugin_root .. 'lua/?/init.lua;' .. package.path
+  local analyzer = require('goplexity.analyzer')
+
+  -- O(n²) inside O(n) should produce O(n³) via fallback (not in lookup table)
+  local buf1 = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_buf_set_lines(buf1, 0, -1, false, {
+    'package main',
+    'func f(n int) {',
+    '  for i := 0; i < n; i++ {',
+    '    for j := 0; j < n; j++ {',
+    '      for k := 0; k < n; k++ {',
+    '        println(k)',
+    '      }',
+    '    }',
+    '  }',
+    '}',
+  })
+  vim.api.nvim_buf_set_option(buf1, 'filetype', 'go')
+  local results1 = analyzer.analyze(buf1)
+  assert_eq('triple nested loops → O(n³)', results1.overall_time, 'O(n³)')
+  vim.api.nvim_buf_delete(buf1, { force = true })
+
+  -- O(n²) inside O(n²) should produce O(n⁴) via fallback
+  local buf2 = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_buf_set_lines(buf2, 0, -1, false, {
+    'package main',
+    'func f(n int) {',
+    '  for i := 0; i < n; i++ {',
+    '    for j := 0; j < n; j++ {',
+    '      for k := 0; k < n; k++ {',
+    '        for l := 0; l < n; l++ {',
+    '          println(l)',
+    '        }',
+    '      }',
+    '    }',
+    '  }',
+    '}',
+  })
+  vim.api.nvim_buf_set_option(buf2, 'filetype', 'go')
+  local results2 = analyzer.analyze(buf2)
+  assert_eq('quadruple nested loops → O(n⁴)', results2.overall_time, 'O(n⁴)')
+  vim.api.nvim_buf_delete(buf2, { force = true })
+
+  -- O(log n) inside O(log n) should produce O(log² n) via lookup table
+  local buf3 = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_buf_set_lines(buf3, 0, -1, false, {
+    'package main',
+    'func f(n int) {',
+    '  for i := 1; i < n; i *= 2 {',
+    '    for j := 1; j < n; j *= 2 {',
+    '      println(j)',
+    '    }',
+    '  }',
+    '}',
+  })
+  vim.api.nvim_buf_set_option(buf3, 'filetype', 'go')
+  local results3 = analyzer.analyze(buf3)
+  assert_eq('nested log loops → O(log² n)', results3.overall_time, 'O(log² n)')
+  vim.api.nvim_buf_delete(buf3, { force = true })
+
+  -- O(√n) inside O(√n) should produce O(n) via lookup table
+  local buf4 = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_buf_set_lines(buf4, 0, -1, false, {
+    'package main',
+    'func f(n int) {',
+    '  for i := 1; i*i <= n; i++ {',
+    '    for j := 1; j*j <= n; j++ {',
+    '      println(j)',
+    '    }',
+    '  }',
+    '}',
+  })
+  vim.api.nvim_buf_set_option(buf4, 'filetype', 'go')
+  local results4 = analyzer.analyze(buf4)
+  assert_eq('nested sqrt loops → O(n)', results4.overall_time, 'O(n)')
+  vim.api.nvim_buf_delete(buf4, { force = true })
+
+  -- O(n) inside O(n) inside O(n) should produce O(n³) via fallback
+  local buf5 = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_buf_set_lines(buf5, 0, -1, false, {
+    'package main',
+    'func f(n int) {',
+    '  for i := 0; i < n; i++ {',
+    '    for j := 0; j < n; j++ {',
+    '      for k := 0; k < n; k++ {',
+    '        for l := 0; l < n; l++ {',
+    '          for m := 0; m < n; m++ {',
+    '            println(m)',
+    '          }',
+    '        }',
+    '      }',
+    '    }',
+    '  }',
+    '}',
+  })
+  vim.api.nvim_buf_set_option(buf5, 'filetype', 'go')
+  local results5 = analyzer.analyze(buf5)
+  assert_eq('quintuple nested loops → O(n⁵)', results5.overall_time, 'O(n⁵)')
+  vim.api.nvim_buf_delete(buf5, { force = true })
 
   -- Summary
   print('\n' .. string.rep('-', 80))
