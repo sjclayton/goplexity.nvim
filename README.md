@@ -84,9 +84,8 @@ package main                    // 🧠 Time: O(n²) | Space: O(n)
 import "sort"
 
 func solve(n int) {             // 🧠 Time: O(n²) | Space: O(n)
-    arr := make([]int, n)
-
-    for i := 0; i < n; i++ {    // 🧠 T:O(n) S:O(1)
+    arr := make([]int, n)           // 🧠 T:O(n)
+    for i := 0; i < n; i++ {        // 🧠 T:O(n) S:O(1)
         arr[i] = i
     }
 
@@ -94,8 +93,8 @@ func solve(n int) {             // 🧠 Time: O(n²) | Space: O(n)
         return arr[i] < arr[j]
     })
 
-    for i := 0; i < n; i++ {    // 🧠 T:O(n²) S:O(1)
-        for j := i + 1; j < n; j++ {  // 🧠 T:O(n) S:O(1)
+    for i := 0; i < n; i++ {        // 🧠 T:O(n) S:O(1)
+        for j := i + 1; j < n; j++ { // 🧠 T:O(n²) S:O(1)
             println(arr[i] + arr[j])
         }
     }
@@ -164,8 +163,8 @@ The plugin includes two test suites run headlessly via Neovim:
 # Main suite: 63 tests covering all audited algorithm/syntax patterns
 nvim --headless --clean --cmd "set rtp+=~/.local/share/nvim/site" -u tests/test_runner.lua 2>&1
 
-# Integration suite: 80 tests covering :Goplexity constraints (warnings,
-# memory limits, randomized testing)
+# Integration suite: 80 tests covering (constraint warnings,
+# memory limits, randomized testing, general functionality)
 nvim --headless --clean --cmd "set rtp+=~/.local/share/nvim/site" -u tests/test_constraints_e2e.lua 2>&1
 ```
 
