@@ -2,7 +2,7 @@ package main
 
 // Test: Data Structure Declarations
 // Expected Time Complexity: O(1) - just allocations
-// Expected Space Complexity: O(n) for sized structures, O(1) for empty/nil
+// Expected Space Complexity: O(1) - all allocations use literal sizes
 func testDataStructures() {
 	// Slices
 	var emptySlice []int               // O(1) space - nil/header only

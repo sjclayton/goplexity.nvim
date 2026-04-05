@@ -333,6 +333,11 @@ function M.run()
     { name = 'data_structures', file = test_dir .. 'data_structures/main.go' },
     { name = 'map_ops', file = test_dir .. 'map_ops/main.go' },
     { name = 'space_2d', file = test_dir .. 'space_2d/main.go' },
+    { name = 'space_expressions', file = test_dir .. 'space_expressions/main.go' },
+    { name = 'make_with_capacity', file = test_dir .. 'make_with_capacity/main.go' },
+    { name = 'mixed_space_patterns', file = test_dir .. 'mixed_space_patterns/main.go' },
+    -- Nested complexity
+    { name = 'nested_quartic', file = test_dir .. 'nested_quartic/main.go' },
     -- Other
     { name = 'method_receiver', file = test_dir .. 'method_receiver/main.go' },
   }

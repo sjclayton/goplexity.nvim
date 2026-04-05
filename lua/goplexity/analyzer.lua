@@ -948,10 +948,11 @@ local function detect_algorithm_by_content(lines, start_line, func_name)
     return 'O(L)', 'O(L * Σ)'
   end
 
-  -- Segment tree: array size 4*n + 2*node children
+  -- Segment tree: array size 4*n + 2*node children, or name-based detection
   local has_seg_tree_size = content:match('4%s*%*%s*n')
   local has_node_children = content:match('2%s*%*%s*node') or content:match('node%s*%*%s*2')
-  if has_seg_tree_size or has_node_children then
+  local has_seg_tree_name = func_name and (func_name:match('[Ss]egment') or func_name:match('build') or func_name:match('query'))
+  if (has_seg_tree_size and has_node_children) or (has_seg_tree_name and (has_seg_tree_size or has_node_children)) then
     return 'O(log n)', 'O(n)'
   end
 
@@ -993,35 +994,51 @@ local function analyze_space(lines)
 
     -- Detect actual space-allocating declarations
     if
-      line:match('make%s*%[%s*') -- make([]T, ...)
+      line:match('make%s*%(%s*%[') -- make([]T, ...)
       or line:match('make%s*%(map') -- make(map[T]U, ...)
       or line:match('make%s*%(chan') -- make(chan T, ...)
     then
-      local go_size = line:match('make%s*%[%s*[^,]+%s*,%s*(%w+)%s*%]')
-        or line:match('make%s*%(chan%s+[^,]+%s*,%s*(%w+)%s*%)')
+      -- Extract the make(...) content between outer parens
+      -- Always use the parenthesized form: make(type, size) or make(type, len, cap)
+      local make_content = line:match('make%s*%(([^)]+)%)')
 
-      if go_size and go_size:match('^%d+$') then
-        table.insert(space_items, { line = i, complexity = 'O(1)' })
-      elseif go_size then
-        table.insert(space_items, { line = i, complexity = 'O(n)' })
-      elseif line:match('make%s*%[%s*') then
-        local make_size = line:match('make%s*%[%s*[^,]+%s*,%s*([^%)]+)')
-        if make_size and make_size:match('^%d+$') then
-          table.insert(space_items, { line = i, complexity = 'O(1)' })
-        else
-          table.insert(space_items, { line = i, complexity = 'O(n)' })
+      if make_content then
+        -- Count commas to determine number of arguments
+        local comma_count = 0
+        for _ in make_content:gmatch(',') do
+          comma_count = comma_count + 1
         end
-      elseif line:match('make%s*%(chan') then
-        local chan_size = line:match('make%s*%(chan%s+[^,]+%s*,%s*([^%)]+)')
-        if chan_size and chan_size:match('^%d+$') then
-          table.insert(space_items, { line = i, complexity = 'O(1)' })
-        elseif chan_size then
-          table.insert(space_items, { line = i, complexity = 'O(n)' })
+
+        if comma_count >= 1 then
+          -- Has at least size argument
+          local is_literal = false
+          if comma_count == 1 then
+            -- make([]T, size) - extract size (everything after first comma)
+            local size = make_content:match(',%s*(.+)$')
+            if size and size:match('^%d+$') then
+              is_literal = true
+            end
+          else
+            -- make([]T, len, cap) or make(chan T, buf) - check capacity/buffer
+            local cap = make_content:match(',%s*[^,]+%s*,%s*(.+)$')
+            if cap and cap:match('^%d+$') then
+              is_literal = true
+            end
+          end
+
+          if is_literal then
+            table.insert(space_items, { line = i, complexity = 'O(1)' })
+          else
+            table.insert(space_items, { line = i, complexity = 'O(n)' })
+          end
         else
-          table.insert(space_items, { line = i, complexity = 'O(1)' })
+          -- No size argument: make([]T) or make(map) or make(chan)
+          if line:match('make%s*%(chan') then
+            table.insert(space_items, { line = i, complexity = 'O(1)' })
+          else
+            table.insert(space_items, { line = i, complexity = 'O(n)' })
+          end
         end
-      elseif line:match('make%s*%(map') then
-        table.insert(space_items, { line = i, complexity = 'O(n)' })
       end
     end
 
