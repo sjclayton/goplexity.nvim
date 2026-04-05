@@ -5,10 +5,10 @@ import (
 	"path/filepath"
 )
 
-// Test: filepath Package Operations
+// Test: Filepath operations
 // Verified: Real-world complexity expectations are accurate. Do not modify again.
-// Expected Time Complexity: O(n) - walks directories or matches patterns
-// Expected Space Complexity: O(n) - path allocations
+// Expected Time Complexity: O(n)
+// Expected Space Complexity: O(n)
 
 // Expected Time Complexity: O(n)
 // Expected Space Complexity: O(n)
@@ -22,6 +22,26 @@ func testFilepathOps() {
 	_, _ = filepath.Match("*.go", "main.go")
 }
 
+// Expected Time Complexity: O(n)
+// Expected Space Complexity: O(1)
+func testFilepath(p string) {
+	// Expected Time Complexity: O(n)
+	filepath.Abs(p)
+
+	// Expected Time Complexity: O(n)
+	filepath.Base(p)
+
+	// Expected Time Complexity: O(n)
+	filepath.Clean(p)
+
+	// Expected Time Complexity: O(n)
+	filepath.Ext(p)
+
+	// Expected Time Complexity: O(n)
+	filepath.Join(p, "subdir")
+}
+
 func main() {
 	testFilepathOps()
+	testFilepath("/home/user/file.txt")
 }

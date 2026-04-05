@@ -29,9 +29,12 @@ Complexity analyzer for Golang
 - **Hashing**: `sha256.Sum256`, `sha256.New`, `sha512.New`, `md5.Sum`, `md5.New`, `h.Write`, `h.Sum`, `hash.New`
 - **Concurrency**: `go` goroutines (O(1) creation baseline), `defer`, `select { }`, buffered/unbuffered channels
 - **Context**: `context.Background`, `context.TODO`, `context.WithTimeout`, `context.WithCancel`, `context.WithDeadline`
-- **Sync**: `sync.Mutex` (Lock/Unlock), `sync.WaitGroup` (Add/Done/Wait), `sync.Once.Do`
-- **Time**: `time.Now`, `time.Sleep`, `time.Since`, `time.Until`
-- **Filepath**: `filepath.Walk`, `filepath.WalkDir`, `filepath.Match`
+- **Filepath**: `filepath.Walk`, `filepath.WalkDir`, `filepath.Match`, `filepath.Abs`, `filepath.Base`, `filepath.Clean`, `filepath.Ext`, `filepath.Join`
+- **Reflect**: `reflect.DeepEqual` O(n), `reflect.TypeOf` O(1), `reflect.ValueOf` O(1)
+- **Random**: `rand.Shuffle` O(n), `rand.Perm` O(n), `rand.Intn` O(1)
+- **Sync**: `sync.Map.Range` O(n), `sync.Map` (Load, Store, Delete) O(1), `sync.Pool`, `sync.WaitGroup`, `sync.Mutex`
+- **Unicode/UTF8**: `utf8.DecodeRune` O(1), `utf8.RuneCountInString` O(n), `utf8.ValidString` O(n)
+- **Net/URL**: `url.Parse` O(n), `url.Values.Encode` O(n)
 - **Strconv**: `strconv.Atoi`, `strconv.Itoa`, `strconv.ParseInt`, `strconv.FormatInt`
 - **Regexp**: `regexp.Compile`, `regexp.Match`, `Regexp.Find`, `Regexp.FindAll`
 - **Compress**: `gzip.NewWriter`, `gzip.NewReader`
@@ -42,7 +45,9 @@ Complexity analyzer for Golang
   - Sorting: Merge Sort O(n log n), Quick Sort O(n log n), Heap Sort O(n log n)
   - Data structures: Union-Find/DSU O(α(n)), Trie O(L), Segment Tree O(log n)
   - String matching: KMP O(n)
+  - Dynamic Programming: Kadane's O(n), Longest Common Subsequence (LCS) O(n×m), 0/1 Knapsack O(n×W)
   - Number theory: Sieve of Eratosthenes O(n log log n), GCD O(log n)
+  - Data structures: Binary Indexed Tree (Fenwick) O(log n), Sparse Table O(n log n) preprocessing / O(1) query
   - Searching: Binary Search O(log n)
 
 ### Space Complexity Detection
@@ -160,7 +165,7 @@ local visible = goplexity.toggle()
 The plugin includes two test suites run headlessly via Neovim:
 
 ```bash
-# Main suite: 63 tests covering all audited algorithm/syntax patterns
+# Main suite: 73 tests covering all audited algorithm/syntax patterns
 nvim --headless --clean --cmd "set rtp+=~/.local/share/nvim/site" -u tests/test_runner.lua 2>&1
 
 # Integration suite: 80 tests covering (constraint warnings,

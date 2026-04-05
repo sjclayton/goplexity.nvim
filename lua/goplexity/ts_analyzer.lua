@@ -91,7 +91,10 @@ local STDLIB = {
     Open = 'O(1)', Create = 'O(1)', Stat = 'O(1)', Lstat = 'O(1)',
     ReadFile = 'O(n)', WriteFile = 'O(n)', Read = 'O(n)', Write = 'O(n)', ReadDir = 'O(n)',
   },
-  filepath = { Walk = 'O(n)', WalkDir = 'O(n)', Match = 'O(n)' },
+  filepath = { 
+    Walk = 'O(n)', WalkDir = 'O(n)', Match = 'O(n)',
+    Abs = 'O(n)', Base = 'O(n)', Clean = 'O(n)', Ext = 'O(n)', Join = 'O(n)'
+  },
   context  = {
     Background = 'O(1)', TODO = 'O(1)',
     WithTimeout = 'O(1)', WithCancel = 'O(1)', WithDeadline = 'O(1)',
@@ -107,7 +110,7 @@ local STDLIB = {
   big      = { NewInt = 'O(1)', NewFloat = 'O(1)' },
   heap     = { Init = 'O(n)', Push = 'O(log n)', Pop = 'O(log n)', Fix = 'O(log n)', Remove = 'O(log n)' },
   list     = { New = 'O(1)', PushBack = 'O(1)', PushFront = 'O(1)', Remove = 'O(1)' },
-  ring     = { New = 'O(n)' },
+  ring     = { New = 'O(n)', Len = 'O(n)' },
   hash     = { New = 'O(1)' },
   sha256   = { Sum256 = 'O(n)', New = 'O(1)' },
   sha512   = { New = 'O(1)' },
@@ -115,11 +118,31 @@ local STDLIB = {
   base64   = { NewDecoder = 'O(n)', NewEncoder = 'O(n)' },
   gzip     = { NewWriter = 'O(n)', NewReader = 'O(n)' },
   binary   = { Read = 'O(n)', Write = 'O(n)' },
+  utf8     = { 
+    DecodeRune = 'O(1)', DecodeRuneInString = 'O(1)', 
+    RuneCount = 'O(n)', RuneCountInString = 'O(n)', 
+    Valid = 'O(n)', ValidString = 'O(n)', ValidRune = 'O(1)'
+  },
+  reflect  = { DeepEqual = 'O(n)', TypeOf = 'O(1)', ValueOf = 'O(1)' },
+  rand     = { Shuffle = 'O(n)', Perm = 'O(n)', Intn = 'O(1)', Float64 = 'O(1)' },
+  sync     = { 
+    Once = 'O(1)', WaitGroup = 'O(1)', Mutex = 'O(1)', RWMutex = 'O(1)',
+    Pool = 'O(1)', Cond = 'O(1)', Map = 'O(1)' -- Map methods are in METHOD_COMPLEXITIES
+  },
+  url      = { Parse = 'O(n)', QueryEscape = 'O(n)', QueryUnescape = 'O(n)' },
+  csv      = { NewReader = 'O(1)', NewWriter = 'O(1)' },
+  zip      = { NewReader = 'O(n)', OpenReader = 'O(n)' },
 }
 
 local METHOD_COMPLEXITIES = {
   Write = 'O(n)', Read = 'O(n)', ReadFull = 'O(n)', Sum = 'O(n)', Sum256 = 'O(n)',
   Wait = 'O(n)', Add = 'O(n)', Mul = 'O(n)', Div = 'O(n)', Sub = 'O(n)',
+  -- sync.Map
+  Range = 'O(n)', Load = 'O(1)', Store = 'O(1)', Delete = 'O(1)',
+  -- container/ring
+  Next = 'O(1)', Prev = 'O(1)', Move = 'O(n)',
+  -- url.Values
+  Encode = 'O(n)',
 }
 
 -- Unqualified builtins.
@@ -485,6 +508,45 @@ local function detect_algorithm(body, func_name, lines)
     return false
   end
 
+  -- Advanced Algorithms Detection
+  
+  -- Kadane's Algorithm: O(n) max subarray sum
+  -- Pattern: local sum += x; if sum < 0 { sum = 0 }; if sum > max { max = sum }
+  local has_kadane = (raw:match('%+=%s*') and raw:match('<%s*0') and (raw:match('max') or raw:match('Max')))
+  if has_kadane and for_depth == 1 then
+    return 'O(n)', 'O(1)'
+  end
+
+  -- Binary Indexed Tree (BIT / Fenwick): O(log n) update/query
+  -- Pattern: i += i & -i or i -= i & -i
+  local has_bit_op = raw:match('%+=%s*[%w_]+%s*&%s*%-') or raw:match('%-=%s*[%w_]+%s*&%s*%-')
+  if has_bit_op then
+    return 'O(log n)', 'O(1)'
+  end
+
+  -- Sparse Table: O(n log n) preprocessing
+  -- Pattern: 2D array dp[i][j] + binary jump 1 << (j-1)
+  local has_bin_jump = raw:match('1%s*<<')
+  local has_2d_dp = raw:match('%[.*%]%[.*%]')
+  if has_bin_jump and has_2d_dp and for_depth >= 2 then
+    if func_name:match('[Bb]uild') or func_name:match('[Pp]recompute') or func_name:match('[Ii]nit') then
+      return 'O(n log n)', 'O(n log n)'
+    end
+    -- Query is O(1)
+    if func_name:match('[Qq]uery') or func_name:match('[Gg]et') then
+      return 'O(1)', 'O(1)'
+    end
+  end
+
+  -- LCS / Knapsack: O(n*m) or O(n*W) DP
+  -- Pattern: 2D array dp[i][j] + nested loops + max/min update
+  if has_2d_dp and for_depth >= 2 and (raw:match('max%(') or raw:match('min%(') or raw:match('dp%[.*%]%[.*%]%s*=')) then
+    -- Detect if it's likely knapsack or LCS
+    if has('dp', 'table', 'memo') then
+      return 'O(n×m)', 'O(n×m)'
+    end
+  end
+
   -- Graph-related identifiers (from AST, no string/comment false positives)
   local has_adj    = has('adj', 'neighbors', 'graph')
   local has_vis    = has('visited', 'seen')
@@ -559,7 +621,9 @@ local function detect_algorithm(body, func_name, lines)
 
   -- Quick sort: pivot or partition + recursive call
   if (has_pivot or has_partition) and recurse then
-    return 'O(n log n)', 'O(log n)'
+    local qs_space = 'O(log n)'
+    if raw:match('append') or raw:match('make') then qs_space = 'O(n)' end
+    return 'O(n log n)', qs_space
   end
 
   -- Binary search: left + right + mid + mid-pointer update (no recursion needed)
@@ -749,12 +813,13 @@ function M.analyze(bufnr)
           base_c = BUILTINS[name]
           if name == 'make' then
             base_c = complexity_of_make(node, lines, 'time')
-            -- Also track space for make
             local sc = complexity_of_make(node, lines, 'space')
             results.space_items[#results.space_items + 1] = { line = node_line(node), complexity = sc }
-            results.space = get_dominant(results.space, sc)
             local fe = owning_func(node)
-            if fe then fe.space_complexity = get_dominant(fe.space_complexity, sc) end
+            if not fe or not fe.is_algorithm then
+              results.space = get_dominant(results.space, sc)
+            end
+            if fe and not fe.is_algorithm then fe.space_complexity = get_dominant(fe.space_complexity, sc) end
           elseif name == 'new' then
             results.space_items[#results.space_items + 1] = { line = node_line(node), complexity = 'O(1)' }
           end

@@ -275,6 +275,17 @@ local function run()
     { name = 'nested_n_sqrt',     file = test_dir .. 'nested_n_sqrt/main.go' },
     -- Other
     { name = 'method_receiver',   file = test_dir .. 'method_receiver/main.go' },
+    -- New Advanced Fixtures
+    { name = 'ring_ops',          file = test_dir .. 'ring_ops/main.go' },
+    { name = 'utf8_ops',          file = test_dir .. 'utf8_ops/main.go' },
+    { name = 'reflect_ops',       file = test_dir .. 'reflect_ops/main.go' },
+    { name = 'kadane',            file = test_dir .. 'kadane/main.go' },
+    { name = 'fenwick_tree',      file = test_dir .. 'fenwick_tree/main.go' },
+    { name = 'sparse_table',      file = test_dir .. 'sparse_table/main.go' },
+    { name = 'lcs',               file = test_dir .. 'lcs/main.go' },
+    { name = 'knapsack',          file = test_dir .. 'knapsack/main.go' },
+    { name = 'filepath_ops',      file = test_dir .. 'filepath_ops/main.go' },
+    { name = 'rand_ops',          file = test_dir .. 'rand_ops/main.go' },
   }
 
   local header = string.format(
