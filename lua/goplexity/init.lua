@@ -15,8 +15,10 @@ function M.setup(user_config)
 end
 
 -- Run complexity analysis via the tree-sitter backend and display results.
-local function run_analysis(bufnr)
+-- show_summary: if true, displays the summary notification (default: true)
+local function run_analysis(bufnr, show_summary)
   bufnr = bufnr or vim.api.nvim_get_current_buf()
+  show_summary = show_summary ~= false
 
   local filetype = vim.api.nvim_get_option_value('filetype', { buf = bufnr })
   if filetype ~= 'go' then
@@ -36,19 +38,21 @@ local function run_analysis(bufnr)
 
   local summary = string.format('Time: %s | Space: %s | %d loops', results.overall_time, results.space, #results.loops)
 
-  local constraints = config.get_constraints()
-  local has_constraints = constraints.n or constraints.memory_limit_mb
-  if has_constraints then
-    local warnings = config.should_warn(results.overall_time, results.space)
-    if #warnings > 0 then
-      for _, warning in ipairs(warnings) do
-        vim.notify(warning, vim.log.levels.WARN)
+  if show_summary then
+    local constraints = config.get_constraints()
+    local has_constraints = constraints.n or constraints.memory_limit_mb
+    if has_constraints then
+      local warnings = config.should_warn(results.overall_time, results.space)
+      if #warnings > 0 then
+        for _, warning in ipairs(warnings) do
+          vim.notify(warning, vim.log.levels.WARN)
+        end
+      else
+        vim.notify('Goplexity: ' .. summary, vim.log.levels.INFO)
       end
     else
       vim.notify('Goplexity: ' .. summary, vim.log.levels.INFO)
     end
-  else
-    vim.notify('Goplexity: ' .. summary, vim.log.levels.INFO)
   end
 
   return results
@@ -138,7 +142,7 @@ function M.setup_autocmds()
       end
       timers[args.buf] = vim.defer_fn(function()
         if vim.api.nvim_buf_is_valid(args.buf) then
-          run_analysis(args.buf)
+          run_analysis(args.buf, false)
         end
         timers[args.buf] = nil
       end, 500)
