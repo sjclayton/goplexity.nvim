@@ -7,13 +7,6 @@ local CONSTANTS = {
   DEFAULT_RANK = 100,
 }
 
--- Pattern matchers for control structures
-local CONTROL_PATTERNS = {
-  FOR_TRADITIONAL = '^for%s+[%w_]', -- Go traditional: for i := 0; ... or for i = 0; ...
-  RANGE_FOR = '^for%s+[%w_].*:?=%s*[^=].*range', -- for i, v := range slice
-  FOR_COND = '^for%s+[^;{]', -- Go while-style: for condition { or for condition
-}
-
 -- Complexity hierarchy (from lowest to highest)
 -- Exported so ts_analyzer.lua can share the same table without duplication.
 M.COMPLEXITY_HIERARCHY = {
@@ -146,30 +139,49 @@ local function simplify_inner(inner)
     local result = ''
     if n_count > 0 then
       result = result .. 'n'
-      if n_count == 2 then result = result .. '²'
-      elseif n_count == 3 then result = result .. '³'
-      elseif n_count == 4 then result = result .. '⁴'
-      elseif n_count == 5 then result = result .. '⁵'
-      elseif n_count > 5 then result = result .. '^' .. n_count
+      if n_count == 2 then
+        result = result .. '²'
+      elseif n_count == 3 then
+        result = result .. '³'
+      elseif n_count == 4 then
+        result = result .. '⁴'
+      elseif n_count == 5 then
+        result = result .. '⁵'
+      elseif n_count > 5 then
+        result = result .. '^' .. n_count
       end
     end
     if sqrt_count > 0 then
-      if result ~= '' then result = result .. '×' end
+      if result ~= '' then
+        result = result .. '×'
+      end
       result = result .. '√n'
     end
     if log_count > 0 then
-      if result ~= '' then result = result .. '×' end
+      if result ~= '' then
+        result = result .. '×'
+      end
       result = result .. 'log n'
-      if log_count == 2 then result = result:gsub('log n', 'log² n')
-      elseif log_count == 3 then result = result:gsub('log n', 'log³ n')
-      elseif log_count == 4 then result = result:gsub('log n', 'log⁴ n')
-      elseif log_count > 4 then result = result:gsub('log n', 'log^' .. log_count .. ' n')
+      if log_count == 2 then
+        result = result:gsub('log n', 'log² n')
+      elseif log_count == 3 then
+        result = result:gsub('log n', 'log³ n')
+      elseif log_count == 4 then
+        result = result:gsub('log n', 'log⁴ n')
+      elseif log_count > 4 then
+        result = result:gsub('log n', 'log^' .. log_count .. ' n')
       end
     end
     if const > 1 then
-      if result ~= '' then result = const .. '×' .. result else result = tostring(const) end
+      if result ~= '' then
+        result = const .. '×' .. result
+      else
+        result = tostring(const)
+      end
     end
-    if result == '' then result = '1' end
+    if result == '' then
+      result = '1'
+    end
     return result
   end
   return inner
@@ -206,6 +218,5 @@ function M.multiply_complexity(complexity1, complexity2)
   end
   return 'O(n²)'
 end
-
 
 return M

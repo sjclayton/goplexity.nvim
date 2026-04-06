@@ -78,7 +78,6 @@ function M.get_constraints()
   return vim.tbl_deep_extend('force', M.config.constraints, M.user_constraints)
 end
 
-
 -- Calculate the raw scaled units for a given complexity and n.
 -- Returns the base_ops * n-scaling factor.
 local function get_scaled_units(complexity_str, n)
@@ -122,7 +121,11 @@ local function get_scaled_units(complexity_str, n)
     units = units * math.sqrt(n)
   elseif complexity_str:match('O%(n%)') and not complexity_str:match('O%(n²%)') then
     units = units * n
-  elseif complexity_str:match('O%(V%+E%)') or complexity_str:match('O%(V×E%)') or complexity_str:match('O%(E log V%)') then
+  elseif
+    complexity_str:match('O%(V%+E%)')
+    or complexity_str:match('O%(V×E%)')
+    or complexity_str:match('O%(E log V%)')
+  then
     units = units * n
   elseif complexity_str:match('O%(2%^n%)') or complexity_str:match('O%(n×2') then
     units = units * n * (2 ^ n)

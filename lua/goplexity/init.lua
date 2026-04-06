@@ -3,8 +3,8 @@
 local M = {}
 
 local ts_analyzer = require('goplexity.ts_analyzer')
-local display     = require('goplexity.display')
-local config      = require('goplexity.config')
+local display = require('goplexity.display')
+local config = require('goplexity.config')
 
 -- Store last analysis results per buffer
 M.last_analysis = {}
@@ -65,8 +65,8 @@ local function set_constraints(args)
     return
   end
 
-  local n        = tonumber(args[1])
-  local time_ms  = args[2] and tonumber(args[2])
+  local n = tonumber(args[1])
+  local time_ms = args[2] and tonumber(args[2])
   local memory_mb = args[3] and tonumber(args[3])
 
   if not n then
