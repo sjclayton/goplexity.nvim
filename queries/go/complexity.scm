@@ -1,6 +1,6 @@
 ; ------------------------------------------------------------------
 ; goplexity.nvim - queries/go/complexity.scm
-; Tree-sitter query for Go complexity analysis (Neovim 0.12+)
+; Tree-sitter query for Go complexity analysis
 ;
 ; Uses a focused set of captures. All type-based disambiguation (loop
 ; kind, log increment, sqrt condition, etc.) is done in Lua so that

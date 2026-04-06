@@ -1,11 +1,8 @@
--- goplexity.nvim - Complexity Visualizer for Golang
+-- goplexity.nvim - Complexity analyzer for Golang
 -- Plugin entry point (requires Neovim 0.12+)
 
 if vim.fn.has('nvim-0.12') == 0 then
-  vim.notify(
-    'goplexity.nvim requires Neovim 0.12+. Please upgrade Neovim.',
-    vim.log.levels.WARN
-  )
+  vim.notify('goplexity.nvim requires Neovim 0.12+. Please upgrade Neovim.', vim.log.levels.WARN)
   return
 end
 
@@ -21,7 +18,7 @@ end, {
   complete = function()
     return { 'constraints' }
   end,
-  desc = 'Goplexity complexity visualizer commands',
+  desc = 'Goplexity complexity analyzer commands',
 })
 
 -- Set up auto-refresh on save

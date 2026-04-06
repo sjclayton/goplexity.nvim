@@ -1,5 +1,4 @@
 -- Tree-sitter backend for goplexity.nvim
--- Requires Neovim 0.12+ with the Go tree-sitter parser installed.
 --
 -- results = {
 --   loops          = { { line, complexity, base_complexity, nesting_level }, ... }
@@ -241,7 +240,6 @@ local BUILTINS = {
 -- ---------------------------------------------------------------------------
 
 --- Get the first child of a node by field name.
---- Neovim 0.11+ replaced child_by_field_name() with field() → TSNode[].
 --- @param node TSNode
 --- @param name string
 --- @return TSNode|nil
@@ -458,7 +456,6 @@ local function base_complexity_of_for(for_node, lines)
   end
 
   if kind == 'traditional' then
-    -- Use field() API (Neovim 0.11+) – returns TSNode[]
     local cond = field1(clause, 'condition')
     local update = field1(clause, 'update')
 
