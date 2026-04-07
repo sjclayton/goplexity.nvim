@@ -19,27 +19,27 @@ Complexity analyzer for Golang
 - **Logarithmic loops**: `i *= 2`, `i /= 2`, `i <<= 1`, `i >>= 1`, `i += i` → O(log n)
 - **Square root loops**: `i * i <= n` condition → O(√n)
 - **Nested complexity multiplication**: correctly computes O(n²), O(n³), O(n log n), O(n² log n), O(n² log log n), O(log² n), O(n√n), O(n × 2^n), O(n × n!)
-- **Sorting**: `sort.Slice`, `sort.SliceStable`, `sort.Ints`, `sort.Strings`, `sort.Search` O(log n), `sort.SearchInts`, `sort.SearchFloat64s`, `sort.IsSorted`, `sort.Reverse`, heap operations
-- **Containers**: slices, maps, channels, `container/list` (New, PushBack, PushFront, Remove), `container/ring` (New), `container/heap` (Init O(n), Push/Pop/Fix/Remove O(log n))
-- **Strings**: `strings.Split`, `strings.Join`, `strings.Contains`, `strings.Index`, `strings.ToLower`, `strings.ToUpper`, `strings.Trim`, `strings.Replace`, `strings.Count`, `strings.HasPrefix`, `strings.HasSuffix`
-- **Bytes**: `bytes.Equal`, `bytes.Compare`, `bytes.Split`, `bytes.Join`, `bytes.NewBuffer` O(1), `bytes.NewBufferString` O(n)
-- **Math**: `math.Abs`, `math.Max`, `math.Min`, `math.Ceil`, `math.Floor`, `math.Round`, `math.Pow`, `math.Sqrt`, `math.Log`, `math.Exp`, `math.Sin`, `math.Cos`, `math.Tan`, `math.Atan2`, `math/bits` (OnesCount, LeadingZeros, TrailingZeros, RotateLeft), `math/big` (NewInt, NewFloat, Int.Add, Int.Mul, Int.Div, Int.Sub)
-- **I/O**: `fmt.Print`, `fmt.Println`, `fmt.Sprint`, `fmt.Sprintf`, `fmt.Fprintf`, `fmt.Errorf`, `fmt.Scan`, `fmt.Fscan`, `fmt.Sscan`, `os.Open`, `os.Create`, `os.Stat`, `os.Lstat`, `os.ReadFile`, `os.WriteFile`, `os.Read`, `os.Write`, `os.ReadDir`, `bufio.NewReader`, `bufio.NewWriter`, `Scanner.Scan`, `io.ReadFull`, `io.Copy`
-- **Encoding**: `json.Marshal`, `json.Unmarshal`, `binary.Read`, `binary.Write`, `base64.NewDecoder`, `base64.NewEncoder`
-- **Hashing**: `sha256.Sum256`, `sha256.New`, `sha512.New`, `md5.Sum`, `md5.New`, `h.Write`, `h.Sum`, `hash.New`
-- **Concurrency**: `go` goroutines (O(1) creation baseline), `defer`, `select { }`, buffered/unbuffered channels
-- **Context**: `context.Background`, `context.TODO`, `context.WithTimeout`, `context.WithCancel`, `context.WithDeadline`
-- **Filepath**: `filepath.Walk`, `filepath.WalkDir`, `filepath.Match`, `filepath.Abs`, `filepath.Base`, `filepath.Clean`, `filepath.Ext`, `filepath.Join`
-- **Reflect**: `reflect.DeepEqual` O(n), `reflect.TypeOf` O(1), `reflect.ValueOf` O(1)
-- **Random**: `rand.Shuffle` O(n), `rand.Perm` O(n), `rand.Intn` O(1)
-- **Sync**: `sync.Map.Range` O(n), `sync.Map` (Load, Store, Delete) O(1), `sync.Pool`, `sync.WaitGroup`, `sync.Mutex`
-- **Unicode/UTF8**: `utf8.DecodeRune` O(1), `utf8.RuneCountInString` O(n), `utf8.ValidString` O(n)
-- **Net/URL**: `url.Parse` O(n), `url.Values.Encode` O(n)
-- **Strconv**: `strconv.Atoi`, `strconv.Itoa`, `strconv.ParseInt`, `strconv.FormatInt`
-- **Regexp**: `regexp.Compile`, `regexp.Match`, `Regexp.Find`, `Regexp.FindAll`
-- **Compress**: `gzip.NewWriter`, `gzip.NewReader`
-- **Slices & Maps**: `slices.Sort`/`SortFunc`/`SortStableFunc` O(n log n), `slices.BinarySearch`/`BinarySearchFunc` O(log n), `slices.Contains`/`Equal`/`Clone`/`Delete`/`Insert`/`ContainsFunc`/`IndexFunc` O(n), `maps.Keys`/`Values`/`Equal`/`Clone`/`Copy` O(n)
-- **Builtins**: `append` O(1), `copy` O(n), `delete` O(1), `len`/`cap` O(1), `make` (O(n) space/time for allocations, O(1) time for capacity-only slices like `make([]T, 0, n)`)
+- **Sorting**: `sort.Slice`, `sort.SliceStable`, `sort.Ints`, `sort.Strings`, `sort.Search` -> O(log n), `sort.SearchInts`, `sort.SearchFloat64s`, heap operations -> O(log n), `sort.IsSorted`, `sort.IntsAreSorted` -> O(n), `sort.Reverse` -> O(1)
+- **Containers**: `container/list` (New, PushBack, PushFront, Remove) -> O(1), `container/ring` (New) -> O(n), `container/heap` (Push, Pop) -> O(log n)
+- **Strings**: `strings.Split`, `strings.Join`, `strings.Contains`, `strings.Index`, `strings.ToLower`, `strings.ToUpper`, `strings.Trim`, `strings.Replace`, `strings.Count`, `strings.HasPrefix`, `strings.HasSuffix` -> O(n)
+- **Bytes**: `bytes.Equal`, `bytes.Compare`, `bytes.Split`, `bytes.Join` -> O(n), `bytes.Buffer` -> O(1), `bytes.Buffer.WriteString`, `bytes.Buffer.Bytes` -> O(n)
+- **Math**: `math.Abs`, `math.Max`, `math.Min`, `math.Ceil`, `math.Floor`, `math.Round`, `math.Pow`, `math.Sqrt`, `math.Log`, `math.Exp`, `math.Sin`, `math.Cos`, `math.Tan`, `math.Atan2`, `math/bits.OnesCount`, `math/bits.LeadingZeros`, `math/bits.TrailingZeros`, `math/bits.RotateLeft` -> O(1), `math/big.NewInt`, `math/big.Int.Add`, `math/big.Int.Mul`, `math/big.Int.Div`, `math/big.Int.Sub` -> O(n)
+- **I/O**: `fmt.Print`, `fmt.Println`, `fmt.Sprint`, `fmt.Sprintf`, `fmt.Fprintf`, `fmt.Errorf`, `fmt.Scan`, `fmt.Fscan`, `fmt.Sscan`, `fmt.Scanf`, `os.ReadFile`, `os.WriteFile`, `os.Read`, `os.Write`, `os.ReadDir`, `Scanner.Scan`, `io.ReadFull`, `io.Copy` -> O(n), `os.Open`, `os.Create`, `os.Stat`, `os.Lstat`, `bufio.NewReader`, `bufio.NewWriter` -> O(1)
+- **Encoding**: `json.Marshal`, `json.Unmarshal`, `binary.Read`, `binary.Write`, `base64.NewDecoder`, `base64.StdEncoding.EncodeToString` -> O(n)
+- **Hashing**: `sha256.Sum256`, `sha512.New`, `md5.Sum`, `sha256.New`, `md5.New`, `h.Write`, `h.Sum`, `hash.New` -> O(n), `hash.Hash.BlockSize`, `hash.Hash.Size` -> O(1)
+- **Concurrency**: `go` goroutines, `defer`, `select { }`, buffered/unbuffered channels -> O(1)
+- **Context**: `context.Background`, `context.TODO`, `context.WithTimeout`, `context.WithCancel`, `context.WithDeadline` -> O(1)
+- **Filepath**: `filepath.Walk`, `filepath.Match`, `filepath.Abs`, `filepath.Base`, `filepath.Clean`, `filepath.Ext`, `filepath.Join` -> O(n)
+- **Reflect**: `reflect.DeepEqual` -> O(n), `reflect.TypeOf`, `reflect.ValueOf` -> O(1)
+- **Random**: `rand.Shuffle`, `rand.Perm` -> O(n)
+- **Sync**: `sync.Map.Range` -> O(n), `sync.Map.Load`, `sync.Map.Store`, `sync.Map.Delete`, `sync.Pool`, `sync.WaitGroup`, `sync.Mutex`, `sync.Once.Do` -> O(1)
+- **Unicode/UTF8**: `utf8.DecodeRuneInString`, `utf8.RuneCountInString`, `utf8.ValidString` -> O(n)
+- **Strconv**: `strconv.Atoi`, `strconv.Itoa`, `strconv.ParseInt`, `strconv.FormatInt` -> O(n)
+- **Regexp**: `regexp.Compile`, `Regexp.MatchString`, `Regexp.Find`, `Regexp.FindAll`, `Regexp.ReplaceAllString` -> O(n)
+- **Compress**: `gzip.NewWriter`, `gzip.NewReader` -> O(n)
+- **Slices & Maps**: `slices.Sort`, `slices.SortFunc`, `slices.SortStableFunc` -> O(n log n), `slices.BinarySearch`, `slices.BinarySearchFunc` -> O(log n), `slices.Contains`, `slices.Equal`, `slices.Clone`, `slices.Delete`, `slices.Insert`, `slices.ContainsFunc`, `slices.IndexFunc`, `maps.Keys`, `maps.Values`, `maps.Equal`, `maps.Clone`, `maps.Copy` -> O(n)
+- **Builtins**: `append`, `delete`, `len`, `cap` -> O(1), `copy` -> O(n), `make` (allocations -> O(n), capacity-only -> O(1))
+- **Time**: `time.Now`, `time.Sleep`, `time.Since`, `time.Until` -> O(1)
 - **Algorithms**:
   - Graph: DFS O(V+E), BFS O(V+E), Dijkstra O(E log V), Bellman-Ford O(V×E), Floyd-Warshall O(n³), Topological Sort O(V+E), Kruskal's MST O(E log E), Prim's MST O(V²)
   - Sorting: Merge Sort O(n log n), Quick Sort O(n log n), Heap Sort O(n log n)
@@ -52,9 +52,9 @@ Complexity analyzer for Golang
 
 ### Space Complexity Detection
 
-- Slices: `make([]int, n)`, `make([]int, 0, n)`
-- Maps: `make(map[K]V)`
-- Channels: `make(chan T)`, `make(chan T, buffer)`
+- Slices: `make([]int, n)`, `make([]int, 0, n)` -> O(n)
+- Maps: `make(map[K]V)` -> O(n)
+- Channels: `make(chan T)`, `make(chan T, buffer)` -> O(n) for buffered, O(1) for unbuffered
 - Allocations: `new(Type)` → O(1)
 - 2D structures: `make([][]int, n)` → O(n²), `make([]map[K]V, n)` → O(n²)
 - Correctly excludes function signature parameters (references, not allocations)
