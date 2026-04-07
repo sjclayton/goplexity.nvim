@@ -4,11 +4,11 @@ import "sync"
 
 // Test: Sync Package Operations
 // Verified: Real-world complexity expectations are accurate. Do not modify again.
-// Expected Time Complexity: O(n) - WaitGroup.Wait detected as O(n) by analyzer
-// Expected Space Complexity: O(1) - minimal allocations
+// Expected Time Complexity: O(n) - WaitGroup.Wait and Map operations
+// Expected Space Complexity: O(n) - Map storage
 
 // Expected Time Complexity: O(n)
-// Expected Space Complexity: O(1)
+// Expected Space Complexity: O(n)
 func testSyncOps() {
 	// sync.Mutex - O(1)
 	var m sync.Mutex
@@ -24,6 +24,26 @@ func testSyncOps() {
 	// sync.Once.Do - O(1)
 	var once sync.Once
 	once.Do(func() {})
+
+	// sync.Map - Load O(1), Store O(1), Delete O(1)
+	var mp sync.Map
+	mp.Store("key", "value")
+	_, _ = mp.Load("key")
+	mp.Delete("key")
+
+	// sync.Map.Range - O(n)
+	mp.Store("a", 1)
+	mp.Store("b", 2)
+	mp.Range(func(key, value any) bool {
+		_ = key
+		_ = value
+		return true
+	})
+
+	// sync.Pool - O(1) Get/Put
+	pool := sync.Pool{}
+	_ = pool.Get()
+	pool.Put("item")
 }
 
 func main() {
