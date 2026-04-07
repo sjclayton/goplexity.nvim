@@ -272,9 +272,6 @@ local STDLIB_UNIFIED = {
     Cond = { time = 'O(1)', space = 'O(1)' },
     Map = { time = 'O(1)', space = 'O(1)' },
   },
-  url = {},
-  csv = {},
-  zip = {},
   container = {
     ring = { New = { time = 'O(n)', space = 'O(n)' } },
   },
