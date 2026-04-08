@@ -34,7 +34,11 @@ local function get_query()
   end
   local src = f:read('*all')
   f:close()
-  _QUERY = vim.treesitter.query.parse('go', src)
+  local ok, parsed = pcall(vim.treesitter.query.parse, 'go', src)
+  if not ok then
+    error('goplexity: failed to parse query: ' .. tostring(parsed))
+  end
+  _QUERY = parsed
   return _QUERY
 end
 
@@ -1003,6 +1007,15 @@ function M.analyze(bufnr)
     return body and func_map[body:id()]
   end
 
+  local function get_internal_func_complexity(name)
+    for _, fe in pairs(func_map) do
+      if fe.name == name and fe.time_complexity ~= 'O(1)' then
+        return fe.time_complexity
+      end
+    end
+    return nil
+  end
+
   -- -------------------------------------------------------------------------
   -- Pass 2: Resolution. Compute nested complexities and resolve all calls.
   -- -------------------------------------------------------------------------
@@ -1086,14 +1099,7 @@ function M.analyze(bufnr)
 
       -- If not a builtin/stdlib, check if it's an internal function
       if not base_c and name and not BUILTINS[name] and name ~= 'make' and name ~= 'new' then
-        for _, fe in pairs(func_map) do
-          if fe.name == name then
-            if fe.time_complexity ~= 'O(1)' then
-              base_c = fe.time_complexity
-            end
-            break
-          end
-        end
+        base_c = get_internal_func_complexity(name)
       end
 
       if base_c then

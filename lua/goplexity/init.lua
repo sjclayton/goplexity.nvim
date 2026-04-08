@@ -124,6 +124,10 @@ function M.setup_autocmds()
     callback = function(args)
       M.last_analysis[args.buf] = nil
       display.clear(args.buf)
+      if timers[args.buf] then
+        timers[args.buf]:stop()
+        timers[args.buf] = nil
+      end
     end,
     desc = 'Cleanup goplexity data when buffer is closed',
   })

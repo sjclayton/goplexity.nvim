@@ -45,9 +45,6 @@ function M.get_dominant_complexity(complexity1, complexity2)
   return rank1 >= rank2 and complexity1 or complexity2
 end
 
--- Local alias used by the rest of this module.
-local get_dominant_complexity = M.get_dominant_complexity
-
 -- Multiplication lookup table for common complexity combinations
 local COMPLEXITY_MULTIPLICATION = {
   ['n|n'] = 'O(n²)',
