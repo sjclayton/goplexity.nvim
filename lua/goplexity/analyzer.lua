@@ -31,6 +31,7 @@ M.COMPLEXITY_HIERARCHY = {
   ['O(n⁵)'] = 14,
   ['O(V+E)'] = 15, -- Graph traversal
   ['O(V×E)'] = 16, -- Bellman-Ford
+  ['O(n×m)'] = 16.5, -- 2D DP (LCS, Knapsack)
   ['O(E log V)'] = 17, -- Dijkstra
   ['O(2^n)'] = 18,
   ['O(n!)'] = 19,

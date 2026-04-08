@@ -104,6 +104,8 @@ end
 function M.setup_autocmds()
   local group = vim.api.nvim_create_augroup('GoplexityAutoRefresh', { clear = true })
 
+  local timers = {}
+
   vim.api.nvim_create_autocmd('BufWritePost', {
     group = group,
     pattern = '*.go',
@@ -132,7 +134,6 @@ function M.setup_autocmds()
     desc = 'Cleanup goplexity data when buffer is closed',
   })
 
-  local timers = {}
   vim.api.nvim_create_autocmd({ 'TextChanged', 'InsertLeave' }, {
     group = group,
     pattern = '*.go',
