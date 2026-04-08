@@ -23,7 +23,7 @@
 (call_expression
   function: (selector_expression)) @goplexity.call.qualified
 
-; Unqualified calls — make, new, append, copy, delete, len, cap, go, defer.
+; Unqualified calls — make, new, append, copy, delete, len, cap, go.
 (call_expression
   function: (identifier)) @goplexity.call.builtin_expr
 

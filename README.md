@@ -21,13 +21,13 @@ Complexity analyzer for Golang
 - **Nested complexity multiplication**: correctly computes O(n²), O(n³), O(n log n), O(n² log n), O(n² log log n), O(log² n), O(n√n), O(n × 2^n), O(n × n!)
 - **Sorting**: `sort.Slice, SliceStable, Ints, Strings, Search` -> O(log n), `sort.SearchInts, SearchFloat64s, IsSorted, IntsAreSorted` -> O(n), `sort.Reverse` -> O(1)
 - **Containers**: `container/list.New, PushBack, PushFront, Remove` -> O(1), `container/ring.New, Len, Move` -> O(n), `container/heap.Init` -> O(n), `container/heap.Push, Pop` -> O(log n)
-- **Strings**: `strings.Split, Join, Contains, Index, ToLower, ToUpper, Trim, Replace, Count, HasPrefix, HasSuffix` -> O(n), `strings.Builder, NewReader` -> O(n)
+- **Strings**: `strings.Split, Join, Contains, Index, ToLower, ToUpper, Trim, Replace, Count, HasPrefix, HasSuffix` -> O(n)
 - **Bytes**: `bytes.Split, Join` -> O(n), `bytes.Equal, Compare` -> O(n), `bytes.NewBuffer` -> O(1), `bytes.Buffer.WriteString` -> O(n)
 - **Math**: `math.Abs, Max, Min, Ceil, Floor, Round, Pow, Sqrt, Log, Exp, Sin, Cos, Tan, Atan2, Pi` -> O(1), `math/bits.OnesCount, LeadingZeros, TrailingZeros, RotateLeft` -> O(1), `math/big.NewInt` -> O(1), `big.Int.Add, Mul, Div, Sub` -> O(n)
 - **I/O**: `fmt.Print, Println, Printf` -> O(n), `fmt.Sprint, Sprintf, Errorf` -> O(n), `fmt.Scan, Fscan, Sscan, Scanf` -> O(n), `os.Open, Create, Stat, Lstat, ReadFile, WriteFile, Read, Write, ReadDir` -> O(n), `bufio.NewReader, NewWriter, NewScanner` -> O(1), `io.ReadFull, Copy` -> O(n)
 - **Encoding**: `json.Marshal, Unmarshal` -> O(n), `encoding/binary.Read, Write, LittleEndian` -> O(n), `base64.NewDecoder, NewEncoder` -> O(n)
 - **Hashing**: `crypto/sha256.New, Sum256` -> O(n), `crypto/md5.Sum` -> O(n), `hash.New` -> O(n), `hash.Hash.BlockSize, Size` -> O(1)
-- **Concurrency**: `go` goroutines, `defer`, `select { }`, buffered/unbuffered channels -> O(1)
+- **Concurrency**: `go` goroutines, buffered/unbuffered channels -> O(1)
 - **Context**: `context.Background, TODO, WithTimeout, WithCancel, WithDeadline` -> O(1)
 - **Filepath**: `filepath.Walk, Match, WalkDir` -> O(n), `filepath.Abs, Base, Clean, Ext, Join` -> O(n)
 - **Reflect**: `reflect.DeepEqual` -> O(n), `reflect.TypeOf, ValueOf` -> O(1)
@@ -180,3 +180,4 @@ matches expectations.
 ## Contributing
 
 Anyone who wishes to help improve this plugin is welcome to open an issue and/or submit a pull request.
+
