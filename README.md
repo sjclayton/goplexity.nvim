@@ -61,6 +61,12 @@ Complexity analyzer for Golang
 - Correctly excludes small slice/map literals (`[]int{1, 2, 3}`)
 - Correctly identifies O(1) for functions without allocations
 
+## Requirements
+
+- Neovim 0.11+
+- Treesitter (Main branch / Neovim built-in)
+- Go treesitter parser installed (`:TSInstall go`)
+
 ## Installation
 
 ```lua
@@ -153,12 +159,6 @@ local goplexity = require('goplexity')
 -- Re-runs analysis each time hints are shown
 local visible = goplexity.toggle()
 ```
-
-## Requirements
-
-- Neovim 0.11+
-- Treesitter (Main branch / Neovim built-in)
-- Go treesitter parser installed (`:TSInstall go`)
 
 ## Running Tests
 
