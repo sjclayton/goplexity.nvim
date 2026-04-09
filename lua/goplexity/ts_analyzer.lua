@@ -1,13 +1,4 @@
 -- Tree-sitter backend for goplexity.nvim
---
--- results = {
---   loops          = { { line, complexity, base_complexity, nesting_level }, ... }
---   function_calls = { { line, complexity, base_complexity, nesting_level }, ... }
---   space          = 'O(1)'   -- overall space (dominant across functions)
---   space_items    = { { line, complexity }, ... }
---   overall_time   = 'O(1)'
---   functions      = { { name, line, time_complexity, space_complexity }, ... }
--- }
 
 local M = {}
 

@@ -6,6 +6,14 @@ local ts_analyzer = require('goplexity.ts_analyzer')
 local display = require('goplexity.display')
 local config = require('goplexity.config')
 
+local function check_version()
+  if vim.fn.has('nvim-0.11') == 0 then
+    vim.notify('goplexity.nvim requires Neovim 0.11+. Please upgrade Neovim.', vim.log.levels.WARN)
+    return false
+  end
+  return true
+end
+
 -- Store last analysis results per buffer
 M.last_analysis = {}
 
@@ -89,6 +97,9 @@ end
 
 -- Toggle complexity visibility (returns true if shown, false if hidden)
 function M.toggle(bufnr)
+  if not check_version() then
+    return false
+  end
   bufnr = bufnr or vim.api.nvim_get_current_buf()
   local visible = display.toggle(bufnr)
 
@@ -102,6 +113,9 @@ end
 -- Auto-refresh on save when hints are visible.
 -- Auto-analyze on Go file open when enabled = true.
 function M.setup_autocmds()
+  if not check_version() then
+    return
+  end
   local group = vim.api.nvim_create_augroup('GoplexityAutoRefresh', { clear = true })
 
   local timers = {}
@@ -171,6 +185,9 @@ end
 
 -- Main command handler
 function M.command(args)
+  if not check_version() then
+    return
+  end
   if #args == 0 then
     M.toggle()
     return

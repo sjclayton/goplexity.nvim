@@ -156,7 +156,7 @@ local visible = goplexity.toggle()
 
 ## Requirements
 
-- Neovim 0.12+
+- Neovim 0.11+
 - Treesitter (Main branch / Neovim built-in)
 - Go treesitter parser installed (`:TSInstall go`)
 
@@ -180,4 +180,3 @@ matches expectations.
 ## Contributing
 
 Anyone who wishes to help improve this plugin is welcome to open an issue and/or submit a pull request.
-
